@@ -25,6 +25,11 @@ composer require drago/migration
 extensions:
     migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
     console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
+
+# symfony console
+console:
+	name: Symfony Console
+	version: '1.0'
 ```
 Make sure the %consoleMode% parameter is available (usually already present in Nette CLI setups).
 
