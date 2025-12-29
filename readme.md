@@ -16,6 +16,13 @@ Allows you to run SQL migrations from files or directories with checksum validat
 composer require drago/migration
 ```
 
+## Register Migration Extension in Nette
+```php
+extensions:
+    migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
+    console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
+```
+
 ## Usage
 ```bash
 php bin/console db:migrate <path>
