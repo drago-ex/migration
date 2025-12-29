@@ -1,7 +1,7 @@
 ## Drago Migration
 A simple CLI tool for running SQL migrations.
 
-Database migration tool built on **Nette Framework** using **Dibi** and **Symfony Console**.  
+Database migration tool built on **Nette Framework** using **Dibi** and **Symfony Console**.
 Allows you to run SQL migrations from files or directories with checksum validation and transaction support.
 
 ## Requirements
