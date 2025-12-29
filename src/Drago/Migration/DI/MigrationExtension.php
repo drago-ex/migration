@@ -11,6 +11,7 @@ namespace Drago\Migration\DI;
 
 use Drago\Migration\MigrationCommand;
 use Drago\Migration\MigrationRunner;
+use Drago\Migration\Repository;
 use Nette\DI\CompilerExtension;
 use Nette\DI\Definitions\ServiceDefinition;
 use Symfony\Component\Console\Command\Command;
@@ -34,8 +35,11 @@ final class MigrationExtension extends CompilerExtension
 		}
 
 		$builder = $this->getContainerBuilder();
+		$builder->addDefinition($this->prefix('repository'))
+			->setFactory(Repository::class);
+
 		$builder->addDefinition($this->prefix('runner'))
-			->setFactory(MigrationRunner::class);
+			->setFactory(MigrationRunner::class, ['@' . $this->prefix('repository')]);
 
 		$builder->addDefinition($this->prefix('command'))
 			->setFactory(MigrationCommand::class, ['@' . $this->prefix('runner')])
