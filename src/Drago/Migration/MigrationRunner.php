@@ -9,10 +9,10 @@ declare(strict_types=1);
 
 namespace Drago\Migration;
 
-
 use Dibi\DriverException;
 use Dibi\Exception;
 use Throwable;
+
 
 readonly class MigrationRunner
 {
