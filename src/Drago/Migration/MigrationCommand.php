@@ -37,7 +37,7 @@ final class MigrationCommand extends Command
 		$path = $input->getArgument('path');
 
 		try {
-			$this->migrationRunner->run($path, function(string $message) use ($output) {
+			$this->migrationRunner->run($path, function (string $message) use ($output) {
 				$output->writeln($message);
 			});
 
