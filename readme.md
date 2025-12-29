@@ -54,20 +54,11 @@ php vendor/bin/migration db:migrate migrations/001_example.sql
 ```
 
 ## Features
-- Checksum validation
-Detects if a migration file was modified after execution.
-
-- Transactional execution
-Each migration runs inside a database transaction.
-
-- Database locking
-Prevents multiple migration processes from running concurrently.
-
-- Package-aware migrations
-Automatically detects migrations located in vendor/ and groups them by package.
-
-- Symfony Console integration
-Clean CLI output and proper exit codes.
+- Checksum validation – detects modified migrations
+- Transactional execution – safe rollback on failure
+- Database locking – prevents concurrent runs
+- Package-aware migrations – supports vendor-based migrations
+- Symfony Console integration – clean CLI output
 
 ## Notes
 - This package is designed for Nette Framework projects.
