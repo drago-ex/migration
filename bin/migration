@@ -4,15 +4,26 @@
 declare(strict_types=1);
 
 use Contributte\Console\Application;
-use App\Bootstrap;
 
-require __DIR__ . '/../vendor/autoload.php';
-require __DIR__ . '/../app/Bootstrap.php';
+$root = getcwd();
 
-$bootstrap = new Bootstrap;
+$autoload = $root . '/vendor/autoload.php';
+if (!is_file($autoload)) {
+	fwrite(STDERR, "Composer autoload not found. Run composer install.\n");
+	exit(1);
+}
+require $autoload;
+
+$bootstrapFile = $root . '/app/Bootstrap.php';
+if (!is_file($bootstrapFile)) {
+	fwrite(STDERR, "Project Bootstrap not found at app/Bootstrap.php.\n");
+	exit(1);
+}
+require $bootstrapFile;
+
+$bootstrap = new \App\Bootstrap();
 $container = $bootstrap->bootConsoleApplication();
 
 /** @var Application $app */
 $app = $container->getByType(Application::class);
-
 exit($app->run());
