@@ -1,0 +1,29 @@
+{
+	"name": "drago-ex/migration",
+	"type": "library",
+	"description": "A simple CLI tool for running SQL migrations.",
+	"license": ["MIT"],
+	"authors": [
+		{
+			"name": "Zdeněk Papučík",
+			"homepage": "https://github.com/accgit"
+		}
+	],
+	"require": {
+		"php": ">=8.3 <9",
+		"contributte/console": "^0.10",
+		"dibi/dibi": "^5.0"
+	},
+	"require-dev": {
+		"nette/bootstrap": "^3.2",
+		"nette/tester": "^2.5",
+		"tracy/tracy": "^2.10",
+		"phpstan/phpstan-nette": "^1.2.9"
+	},
+	"autoload": {
+		"classmap": ["src/"]
+	},
+	"scripts": {
+		"phpstan": "phpstan analyse --level 5 --configuration tests/phpstan.neon src"
+	}
+}
