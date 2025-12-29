@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace Drago\DI;
+namespace Drago\Migration\DI;
 
 use Drago\Migration\MigrationCommand;
 use Drago\Migration\MigrationRunner;
