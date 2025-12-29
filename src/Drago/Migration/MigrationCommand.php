@@ -20,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 final class MigrationCommand extends Command
 {
 	public function __construct(
-		private readonly MigrationRunner $migrationRunner
+		private readonly MigrationRunner $migrationRunner,
 	) {
 		parent::__construct();
 	}
