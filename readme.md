@@ -4,6 +4,10 @@ A simple CLI tool for running SQL migrations.
 Drago Migration is a lightweight CLI tool built on Nette, Dibi and Symfony Console.
 It allows you to run SQL migrations from files or directories with checksum validation, transactional execution and database-level locking.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/drago-ex/migration/main/license)
+[![PHP version](https://badge.fury.io/ph/drago-ex%2Fmigration.svg)](https://badge.fury.io/ph/drago-ex%2Fmigration)
+[![Coding Style](https://github.com/drago-ex/migration/actions/workflows/coding-style.yml/badge.svg)](https://github.com/drago-ex/migration/actions/workflows/coding-style.yml)
+
 ## Requirements
 - PHP >= 8.3
 - Nette Framework
