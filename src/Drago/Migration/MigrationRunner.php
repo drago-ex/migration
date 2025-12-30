@@ -67,7 +67,9 @@ readonly class MigrationRunner
 		$package = 'core';
 		$normalizedPath = str_replace('\\', '/', $sqlFile);
 		if (str_contains($normalizedPath, 'vendor/')) {
-			$parts = explode('/', $normalizedPath);
+			$vendorPos = strpos($normalizedPath, 'vendor/');
+			$relative = substr($normalizedPath, $vendorPos);
+			$parts = explode('/', $relative);
 			if (isset($parts[1], $parts[2])) {
 				$package = $parts[1] . '/' . $parts[2];
 			}
