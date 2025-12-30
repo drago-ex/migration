@@ -21,7 +21,7 @@ composer require drago/migration
 ```
 
 ## Register Migration Extension in Nette
-```php
+```neon
 extensions:
     migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
     console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
