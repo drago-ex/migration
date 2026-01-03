@@ -60,7 +60,7 @@ Path to a single SQL file or a directory containing multiple .sql files.
 ## Examples
 ```bash
 # Run all migrations in a folder
-php vendor/bin/migration db:migrate migrations/
+php vendor/bin/migration db:migrate migrations
 
 # Run a single migration file
 php vendor/bin/migration db:migrate migrations/001_example.sql
