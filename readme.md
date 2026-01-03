@@ -17,7 +17,7 @@ It allows you to run SQL migrations from files or directories with checksum vali
 
 ## Install
 ```bash
-composer require drago/migration
+composer require drago-ex/migration
 ```
 
 ## Register Migration Extension in Nette
