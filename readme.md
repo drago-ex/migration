@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS migrations (
     CONSTRAINT uq_migrations_package_file
         UNIQUE (package, migration_file)
 )
-ENGINE = InnoDB
-DEFAULT CHARSET = utf8mb4
-COLLATE = utf8mb4_unicode_ci;
+    ENGINE = InnoDB
+    DEFAULT CHARSET = utf8mb4
+    COLLATE = utf8mb4_unicode_ci;
 ```
 
 ## Usage
