@@ -1,10 +1,10 @@
-## Drago Migration
-A simple CLI tool for running SQL migrations.
+# Drago Migration
 
+A simple CLI tool for running SQL migrations.
 Drago Migration is a lightweight CLI tool built on Nette, Dibi and Symfony Console.
 It allows you to run SQL migrations from files or directories with checksum validation, transactional execution and database-level locking.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/drago-ex/migration/main/license)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/drago-ex/migration/blob/main/license)
 [![PHP version](https://badge.fury.io/ph/drago-ex%2Fmigration.svg)](https://badge.fury.io/ph/drago-ex%2Fmigration)
 [![Coding Style](https://github.com/drago-ex/migration/actions/workflows/coding-style.yml/badge.svg)](https://github.com/drago-ex/migration/actions/workflows/coding-style.yml)
 
@@ -15,9 +15,24 @@ It allows you to run SQL migrations from files or directories with checksum vali
 - dibi
 - Composer
 
-## Install
+## Installation
 ```bash
 composer require drago-ex/migration
+```
+
+## Examples
+Run migrations using the Composer-installed binary:
+```bash
+php vendor/bin/migration db:migrate <path>
+```
+Path to a single SQL file or a directory containing multiple .sql files.
+
+```bash
+# Run all migrations in a folder
+php vendor/bin/migration db:migrate migrations
+
+# Run a single migration file
+php vendor/bin/migration db:migrate migrations/001_example.sql
 ```
 
 ## Register Migration Extension in Nette
@@ -50,28 +65,12 @@ CREATE TABLE IF NOT EXISTS migrations (
     COLLATE = utf8mb4_unicode_ci;
 ```
 
-## Usage
-Run migrations using the Composer-installed binary:
-```bash
-php vendor/bin/migration db:migrate <path>
-```
-Path to a single SQL file or a directory containing multiple .sql files.
-
-## Examples
-```bash
-# Run all migrations in a folder
-php vendor/bin/migration db:migrate migrations
-
-# Run a single migration file
-php vendor/bin/migration db:migrate migrations/001_example.sql
-```
-
 ## Features
-- Checksum validation – detects modified migrations
-- Transactional execution – safe rollback on failure
-- Database locking – prevents concurrent runs
-- Package-aware migrations – supports vendor-based migrations
-- Symfony Console integration – clean CLI output
+- Checksum validation - detects modified migrations
+- Transactional execution - safe rollback on failure
+- Database locking - prevents concurrent runs
+- Package-aware migrations - supports vendor-based migrations
+- Symfony Console integration - clean CLI output
 
 ## Notes
 - This package is designed for Nette Framework projects.
