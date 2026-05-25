@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Drago Extension
- * Package built on Nette Framework
- */
-
 declare(strict_types=1);
 
 namespace Drago\Migration\DI;
@@ -17,6 +12,7 @@ use Nette\DI\Definitions\ServiceDefinition;
 use Symfony\Component\Console\Command\Command;
 
 
+/** DI extension for database migrations integration. */
 final class MigrationExtension extends CompilerExtension
 {
 	private bool $consoleMode;
@@ -57,7 +53,7 @@ final class MigrationExtension extends CompilerExtension
 
 		$builder = $this->getContainerBuilder();
 		$commands = $builder->findByType(Command::class);
-		foreach ($commands as $serviceName => $serviceDef) {
+		foreach ($commands as $serviceDef) {
 			assert($serviceDef instanceof ServiceDefinition);
 			$serviceDef->addTag('console.command');
 		}

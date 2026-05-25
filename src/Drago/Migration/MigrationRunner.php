@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Drago Extension
- * Package built on Nette Framework
- */
-
 declare(strict_types=1);
 
 namespace Drago\Migration;
@@ -14,6 +9,7 @@ use Dibi\Exception;
 use Throwable;
 
 
+/** Migration runner for executing SQL migration files safely. */
 readonly class MigrationRunner
 {
 	public function __construct(
@@ -24,23 +20,23 @@ readonly class MigrationRunner
 
 	/**
 	 * Run migrations from a file or a directory.
-	 *
-	 * @param string $path File or directory
-	 * @param callable|null $logger Optional logger callback: fn(string $message)
 	 * @throws Exception
 	 * @throws Throwable
 	 */
 	public function run(string $path, ?callable $logger = null): void
 	{
-		// Acquire lock
 		if (!$this->repository->acquireLock('db_migrations')) {
 			throw new \RuntimeException('Unable to acquire migration lock. Make sure no other session holds the lock.');
 		}
 
 		try {
-			// Determine if path is a file or directory
 			if (is_dir($path)) {
 				$sqlFiles = glob(rtrim($path, '/') . '/*.sql');
+
+				if ($sqlFiles === false) {
+					throw new \RuntimeException(sprintf('Unable to read directory "%s".', $path));
+				}
+
 				sort($sqlFiles);
 
 				foreach ($sqlFiles as $file) {
@@ -48,9 +44,11 @@ readonly class MigrationRunner
 				}
 			} elseif (is_file($path)) {
 				$this->runMigration($path, $logger);
+
 			} else {
 				throw new \RuntimeException(sprintf('Path "%s" does not exist.', $path));
 			}
+
 		} finally {
 			$this->repository->releaseLock('db_migrations');
 		}
@@ -66,10 +64,12 @@ readonly class MigrationRunner
 	{
 		$package = 'core';
 		$normalizedPath = str_replace('\\', '/', $sqlFile);
-		if (str_contains($normalizedPath, 'vendor/')) {
-			$vendorPos = strpos($normalizedPath, 'vendor/');
+
+		$vendorPos = strpos($normalizedPath, 'vendor/');
+		if ($vendorPos !== false) {
 			$relative = substr($normalizedPath, $vendorPos);
 			$parts = explode('/', $relative);
+
 			if (isset($parts[1], $parts[2])) {
 				$package = $parts[1] . '/' . $parts[2];
 			}
@@ -81,6 +81,9 @@ readonly class MigrationRunner
 		}
 
 		$checksum = sha1_file($sqlFile);
+		if ($checksum === false) {
+			throw new \RuntimeException(sprintf('Unable to calculate checksum for "%s".', $sqlFile));
+		}
 
 		if (!$this->repository->migrationsTableExists()) {
 			throw new \RuntimeException('Migrations table does not exist. Run migrations table SQL first.');
@@ -99,16 +102,11 @@ readonly class MigrationRunner
 
 		try {
 			$this->repository->begin();
-
-			// Run SQL file
 			$this->repository->runSqlFile($sqlFile);
-
-			// Insert record
 			$this->repository->insertMigration($package, $migrationFile, $checksum);
-
 			$this->repository->commit();
-
 			$this->log($logger, '✅ Migration "' . $migrationFile . '" executed successfully.');
+
 		} catch (Throwable $e) {
 			$this->repository->rollback();
 			$this->log($logger, '❌ Migration "' . $migrationFile . '" failed: ' . $e->getMessage());
