@@ -21,7 +21,8 @@
 		"phpstan/phpstan-nette": "^2.0"
 	},
 	"bin": [
-		"bin/migration"
+		"bin/migration",
+		"bin/sql-export"
 	],
 	"autoload": {
 		"classmap": ["src/"]

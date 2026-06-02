@@ -35,6 +35,20 @@ php vendor/bin/migration db:migrate migrations
 php vendor/bin/migration db:migrate migrations/001_example.sql
 ```
 
+## Export SQL Migrations
+Export migration SQL files from installed Composer packages:
+```bash
+php vendor/bin/sql-export
+```
+By default, SQL files are copied into the `migrations` directory.
+
+Use an optional target directory argument to export files elsewhere:
+```bash
+php vendor/bin/sql-export db
+php vendor/bin/sql-export var/sql
+```
+Existing files are skipped, so the command can be safely run repeatedly.
+
 ## Register Migration Extension in Nette
 ```neon
 extensions:

@@ -1,0 +1,138 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+use Composer\InstalledVersions;
+
+$root = getcwd();
+
+if (in_array($argv[1] ?? '', ['--help', '-h'], true)) {
+	echo <<<USAGE
+Export migration SQL files from installed Composer packages.
+
+Usage:
+  sql-export [target-dir]
+
+Examples:
+  sql-export
+  sql-export migrations
+  sql-export var/sql
+
+USAGE;
+	exit(0);
+}
+
+$autoload = $root . '/vendor/autoload.php';
+
+if (!is_file($autoload)) {
+	fwrite(STDERR, "\033[31mERROR: Composer autoload not found. Run composer install.\033[0m\n");
+	exit(1);
+}
+
+require $autoload;
+
+$targetArg = $argv[1] ?? 'migrations';
+$targetDir = isAbsolutePath($targetArg)
+		? $targetArg
+		: $root . DIRECTORY_SEPARATOR . $targetArg;
+
+if (is_file($targetDir)) {
+	fwrite(STDERR, "\033[31mERROR: Target path is a file: {$targetDir}\033[0m\n");
+	exit(1);
+}
+
+if (!is_dir($targetDir) && !mkdir($targetDir, 0777, true) && !is_dir($targetDir)) {
+	fwrite(STDERR, "\033[31mERROR: Cannot create target directory: {$targetDir}\033[0m\n");
+	exit(1);
+}
+
+$targetRealPath = realpath($targetDir);
+$targetLabel = str_replace('\\', '/', relativePath($root, $targetDir));
+$rootPackageName = InstalledVersions::getRootPackage()['name'] ?? null;
+
+$blue = "\033[34m";
+$green = "\033[32m";
+$yellow = "\033[33m";
+$red = "\033[31m";
+$reset = "\033[0m";
+
+echo "{$blue}INFO Scanning vendor packages for migration SQL files...{$reset}\n\n";
+
+$found = 0;
+$copied = 0;
+$skipped = 0;
+
+foreach (InstalledVersions::getInstalledPackages() as $packageName) {
+	if ($packageName === $rootPackageName) {
+		continue;
+	}
+
+	$packagePath = InstalledVersions::getInstallPath($packageName);
+
+	if (!$packagePath || !is_dir($packagePath)) {
+		continue;
+	}
+
+	$migrationDirs = [
+			$packagePath . '/migration',
+			$packagePath . '/migrations',
+	];
+
+	foreach ($migrationDirs as $dir) {
+		if (!is_dir($dir)) {
+			continue;
+		}
+
+		if ($targetRealPath !== false && realpath($dir) === $targetRealPath) {
+			continue;
+		}
+
+		foreach (glob($dir . '/*.sql') as $file) {
+			if (!is_file($file)) {
+				continue;
+			}
+
+			$found++;
+			$filename = basename($file);
+			$targetFile = $targetDir . DIRECTORY_SEPARATOR . $filename;
+
+			if (file_exists($targetFile)) {
+				echo "{$yellow}SKIP exists:{$reset} {$filename}\n";
+				$skipped++;
+				continue;
+			}
+
+			if (copy($file, $targetFile)) {
+				echo "{$green}COPIED:{$reset} {$packageName} -> {$filename}\n";
+				$copied++;
+			} else {
+				echo "{$red}ERROR:{$reset} Failed copying {$file}\n";
+			}
+		}
+	}
+}
+
+if ($found === 0) {
+	echo "{$yellow}WARN No migration SQL files found.{$reset}\n";
+} elseif ($copied === 0) {
+	echo "\n{$yellow}SKIP No new files copied into {$targetLabel}. Skipped {$skipped} existing files.{$reset}\n";
+} else {
+	echo "\n{$green}OK Copied {$copied} files into {$targetLabel}. Skipped {$skipped} existing files.{$reset}\n";
+}
+
+function isAbsolutePath(string $path): bool
+{
+	return (bool) preg_match('~^(?:[A-Za-z]:[\\\\/]|/)~', $path);
+}
+
+function relativePath(string $root, string $path): string
+{
+	$root = rtrim(str_replace('\\', '/', $root), '/');
+	$path = str_replace('\\', '/', $path);
+
+	if (str_starts_with($path, $root . '/')) {
+		return substr($path, strlen($root) + 1);
+	}
+
+	return $path;
+}
