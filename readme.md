@@ -49,6 +49,16 @@ php vendor/bin/sql-export var/sql
 ```
 Existing files are skipped, so the command can be safely run repeatedly.
 
+## Automated Package Setup
+Projects using [drago-ex/project-tools](https://github.com/drago-ex/project-tools) can run package-defined migration commands through:
+
+```bash
+php vendor/bin/drago-setup
+```
+
+Packages expose their setup commands in `composer.json` under `extra.drago-project.commands`.
+The migration package provides the migration runner; `drago-setup` only discovers and executes commands defined by installed packages.
+
 ## Register Migration Extension in Nette
 ```neon
 extensions:
@@ -63,7 +73,8 @@ console:
 Make sure the %consoleMode% parameter is available (usually already present in Nette CLI setups).
 
 ## Database Setup
-Create the migrations table in your database:
+The migrations table is created automatically on the first migration run.
+The table is created from the package SQL file `migrations/000_migrations.sql`:
 ```sql
 CREATE TABLE IF NOT EXISTS migrations (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -84,6 +95,7 @@ CREATE TABLE IF NOT EXISTS migrations (
 - Transactional execution - safe rollback on failure
 - Database locking - prevents concurrent runs
 - Package-aware migrations - supports vendor-based migrations
+- Automatic migrations table setup on first run
 - Symfony Console integration - clean CLI output
 
 ## Notes

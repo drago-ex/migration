@@ -30,6 +30,8 @@ readonly class MigrationRunner
 		}
 
 		try {
+			$this->ensureMigrationsTable($logger);
+
 			if (is_dir($path)) {
 				$sqlFiles = glob(rtrim($path, '/') . '/*.sql');
 
@@ -85,10 +87,6 @@ readonly class MigrationRunner
 			throw new \RuntimeException(sprintf('Unable to calculate checksum for "%s".', $sqlFile));
 		}
 
-		if (!$this->repository->migrationsTableExists()) {
-			throw new \RuntimeException('Migrations table does not exist. Run migrations table SQL first.');
-		}
-
 		$existingChecksum = $this->repository->getMigrationChecksum($package, $migrationFile);
 		if ($existingChecksum !== null) {
 			if ($existingChecksum !== $checksum) {
@@ -112,6 +110,31 @@ readonly class MigrationRunner
 			$this->log($logger, '<error>ERROR Migration "' . $migrationFile . '" failed: ' . $e->getMessage() . '</error>');
 			throw $e;
 		}
+	}
+
+
+	/**
+	 * @throws Exception
+	 */
+	private function ensureMigrationsTable(?callable $logger = null): void
+	{
+		if ($this->repository->migrationsTableExists()) {
+			return;
+		}
+
+		$sqlFile = dirname(__DIR__, 3) . '/migrations/000_migrations.sql';
+		if (!is_file($sqlFile) || !is_readable($sqlFile)) {
+			throw new \RuntimeException(sprintf('Migration table SQL file "%s" does not exist or is not readable.', $sqlFile));
+		}
+
+		$checksum = sha1_file($sqlFile);
+		if ($checksum === false) {
+			throw new \RuntimeException(sprintf('Unable to calculate checksum for "%s".', $sqlFile));
+		}
+
+		$this->repository->runSqlFile($sqlFile);
+		$this->repository->insertMigration('drago-ex/migration', basename($sqlFile), $checksum);
+		$this->log($logger, '<info>OK Migration table created.</info>');
 	}
 
 
