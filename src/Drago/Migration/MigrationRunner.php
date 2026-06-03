@@ -92,11 +92,11 @@ readonly class MigrationRunner
 		$existingChecksum = $this->repository->getMigrationChecksum($package, $migrationFile);
 		if ($existingChecksum !== null) {
 			if ($existingChecksum !== $checksum) {
-				$this->log($logger, '❌ Migration "' . $migrationFile . '" failed: checksum mismatch.');
+				$this->log($logger, '<error>ERROR Migration "' . $migrationFile . '" failed: checksum mismatch.</error>');
 				throw new \RuntimeException('Migration "' . $migrationFile . '" was modified after execution.');
 			}
 
-			$this->log($logger, '⚠ Migration "' . $migrationFile . '" already executed. Skipping.');
+			$this->log($logger, '<comment>SKIP Migration "' . $migrationFile . '" already executed.</comment>');
 			return;
 		}
 
@@ -105,11 +105,11 @@ readonly class MigrationRunner
 			$this->repository->runSqlFile($sqlFile);
 			$this->repository->insertMigration($package, $migrationFile, $checksum);
 			$this->repository->commit();
-			$this->log($logger, '✅ Migration "' . $migrationFile . '" executed successfully.');
+			$this->log($logger, '<info>OK Migration "' . $migrationFile . '" executed successfully.</info>');
 
 		} catch (Throwable $e) {
 			$this->repository->rollback();
-			$this->log($logger, '❌ Migration "' . $migrationFile . '" failed: ' . $e->getMessage());
+			$this->log($logger, '<error>ERROR Migration "' . $migrationFile . '" failed: ' . $e->getMessage() . '</error>');
 			throw $e;
 		}
 	}

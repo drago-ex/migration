@@ -38,7 +38,7 @@ final class MigrationCommand extends Command
 			});
 
 		} catch (\Throwable $e) {
-			$output->writeln('❌ <error>' . $e->getMessage() . '</error>');
+			$output->writeln('<error>ERROR: ' . $e->getMessage() . '</error>');
 			return Command::FAILURE;
 		}
 
