@@ -56,7 +56,7 @@ Projects using [drago-ex/project-tools](https://github.com/drago-ex/project-tool
 php vendor/bin/drago-setup
 ```
 
-Packages expose their setup commands in `composer.json` under `extra.drago-project.commands`.
+Packages expose their setup commands in `composer.json` under `extra.drago-tools.commands`.
 The migration package provides the migration runner; `drago-setup` only discovers and executes commands defined by installed packages.
 
 ## Register Migration Extension in Nette
