@@ -65,7 +65,7 @@ extensions:
     migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
     console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
 
-### Symfony Console
+# Symfony Console
 console:
 	name: Symfony Console
 	version: '1.0'
