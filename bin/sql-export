@@ -16,7 +16,7 @@ Usage:
 Examples:
   sql-export
   sql-export migrations
-  sql-export var/sql
+  sql-export temp/sql
 
 USAGE;
 	exit(0);

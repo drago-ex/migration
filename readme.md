@@ -28,10 +28,10 @@ php vendor/bin/migration db:migrate <path>
 Path to a single SQL file or a directory containing multiple .sql files.
 
 ```bash
-# Run all migrations in a folder
+### Run all migrations in a folder
 php vendor/bin/migration db:migrate migrations
 
-# Run a single migration file
+### Run a single migration file
 php vendor/bin/migration db:migrate migrations/001_example.sql
 ```
 
@@ -45,7 +45,7 @@ By default, SQL files are copied into the `migrations` directory.
 Use an optional target directory argument to export files elsewhere:
 ```bash
 php vendor/bin/sql-export db
-php vendor/bin/sql-export var/sql
+php vendor/bin/sql-export temp/sql
 ```
 Existing files are skipped, so the command can be safely run repeatedly.
 
@@ -65,7 +65,7 @@ extensions:
     migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
     console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
 
-# symfony console
+### Symfony Console
 console:
 	name: Symfony Console
 	version: '1.0'

@@ -10,7 +10,6 @@ use Dibi\Exception;
 use Dibi\Row;
 
 
-/** Handles database operations for migrations. */
 readonly class Repository
 {
 	public function __construct(
@@ -19,7 +18,6 @@ readonly class Repository
 	}
 
 
-	/** Acquire a DB lock for migrations. */
 	public function acquireLock(string $name, int $timeout = 30): bool
 	{
 		$result = $this->connection
@@ -30,7 +28,6 @@ readonly class Repository
 	}
 
 
-	/** Release the DB lock. */
 	public function releaseLock(string $name): void
 	{
 		$released = $this->connection
@@ -43,7 +40,6 @@ readonly class Repository
 	}
 
 
-	/** Check if the migrations table exists. */
 	public function migrationsTableExists(): bool
 	{
 		return (bool) $this->connection
@@ -56,7 +52,6 @@ readonly class Repository
 	}
 
 
-	/** Get the checksum of a previously executed migration. */
 	public function getMigrationChecksum(string $package, string $file): ?string
 	{
 		$row = $this->connection
@@ -120,7 +115,6 @@ readonly class Repository
 	}
 
 
-	/** Execute SQL file. */
 	public function runSqlFile(string $file): void
 	{
 		$this->connection->loadFile($file);

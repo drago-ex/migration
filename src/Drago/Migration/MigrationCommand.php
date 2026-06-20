@@ -11,7 +11,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 
-/** Console command for running database migrations. */
 #[AsCommand(name: 'db:migrate', description: 'Run SQL database migrations')]
 final class MigrationCommand extends Command
 {

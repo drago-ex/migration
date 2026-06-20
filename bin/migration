@@ -24,6 +24,6 @@ require $bootstrapFile;
 $bootstrap = new \App\Bootstrap;
 $container = $bootstrap->bootConsoleApplication();
 
-/** @var Application $app */
+/** @temp Application $app */
 $app = $container->getByType(Application::class);
 exit($app->run());

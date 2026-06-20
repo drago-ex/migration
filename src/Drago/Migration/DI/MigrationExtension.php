@@ -12,7 +12,6 @@ use Nette\DI\Definitions\ServiceDefinition;
 use Symfony\Component\Console\Command\Command;
 
 
-/** DI extension for database migrations integration. */
 final class MigrationExtension extends CompilerExtension
 {
 	private bool $consoleMode;
