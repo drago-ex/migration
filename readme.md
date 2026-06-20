@@ -28,10 +28,10 @@ php vendor/bin/migration db:migrate <path>
 Path to a single SQL file or a directory containing multiple .sql files.
 
 ```bash
-### Run all migrations in a folder
+# Run all migrations in a folder
 php vendor/bin/migration db:migrate migrations
 
-### Run a single migration file
+# Run a single migration file
 php vendor/bin/migration db:migrate migrations/001_example.sql
 ```
 
@@ -65,7 +65,7 @@ extensions:
     migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
     console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
 
-### Symfony Console
+# Symfony Console
 console:
 	name: Symfony Console
 	version: '1.0'
