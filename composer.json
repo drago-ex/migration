@@ -1,7 +1,7 @@
 {
 	"name": "drago-ex/migration",
-	"type": "library",
 	"description": "A simple CLI tool for running SQL migrations.",
+	"type": "library",
 	"license": ["MIT"],
 	"authors": [
 		{
@@ -20,16 +20,16 @@
 		"tracy/tracy": "^2.10",
 		"phpstan/phpstan-nette": "^2.0"
 	},
-	"bin": [
-		"bin/migration",
-		"bin/sql-export"
-	],
 	"autoload": {
 		"classmap": ["src/"],
 		"psr-4": {
 			"Drago\\": "src"
 		}
 	},
+	"bin": [
+		"bin/migration",
+		"bin/sql-export"
+	],
 	"scripts": {
 		"phpstan": "phpstan analyse"
 	}
