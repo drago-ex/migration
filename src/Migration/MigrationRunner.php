@@ -122,7 +122,7 @@ readonly class MigrationRunner
 			return;
 		}
 
-		$sqlFile = dirname(__DIR__, 3) . '/migrations/000_migrations.sql';
+		$sqlFile = dirname(__DIR__, 2) . '/migrations/000_migrations.sql';
 		if (!is_file($sqlFile) || !is_readable($sqlFile)) {
 			throw new \RuntimeException(sprintf('Migration table SQL file "%s" does not exist or is not readable.', $sqlFile));
 		}
