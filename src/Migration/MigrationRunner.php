@@ -19,35 +19,47 @@ readonly class MigrationRunner
 
 
 	/**
-	 * Run migrations from a file or a directory.
+	 * Run migrations from a file, a directory (by file name), or a list of files in its order
+	 * (e.g. MigrationFiles::forProject()).
+	 * @param string|list<string> $path
 	 * @throws Exception
 	 * @throws Throwable
 	 */
-	public function run(string $path, ?callable $logger = null): void
+	public function run(string|array $path, ?callable $logger = null): void
 	{
 		$this->process($path, $logger, $this->runMigration(...));
 	}
 
 
 	/**
-	 * Records migrations from a file or a directory as executed, without running their SQL.
+	 * Records migrations from a file, a directory or a list of files as executed, without running their SQL.
 	 * For a database whose schema was created another way, e.g. by an older web installer.
+	 * @param string|list<string> $path
 	 * @throws Exception
 	 * @throws Throwable
 	 */
-	public function baseline(string $path, ?callable $logger = null): void
+	public function baseline(string|array $path, ?callable $logger = null): void
 	{
 		$this->process($path, $logger, $this->baselineMigration(...));
 	}
 
 
 	/**
-	 * Handles a file or every .sql file of a directory under the migration lock.
+	 * Handles a file, every .sql file of a directory, or a list of files under the migration lock.
+	 * @param string|list<string> $path
 	 * @param callable(string, ?callable): void $handler
 	 * @throws Throwable
 	 */
-	private function process(string $path, ?callable $logger, callable $handler): void
+	private function process(string|array $path, ?callable $logger, callable $handler): void
 	{
+		if (is_array($path)) {
+			foreach ($path as $file) {
+				if (!is_file($file)) {
+					throw new \RuntimeException(sprintf('Path "%s" does not exist.', $file));
+				}
+			}
+		}
+
 		if (!$this->repository->acquireLock('db_migrations')) {
 			throw new \RuntimeException('Unable to acquire migration lock. Make sure no other session holds the lock.');
 		}
@@ -56,7 +68,11 @@ readonly class MigrationRunner
 		try {
 			$this->ensureMigrationsTable($logger);
 
-			if (is_dir($path)) {
+			if (is_array($path)) {
+				foreach ($path as $file) {
+					$handler($file, $logger);
+				}
+			} elseif (is_dir($path)) {
 				foreach (MigrationFiles::list($path) as $file) {
 					$handler($file, $logger);
 				}
@@ -175,7 +191,7 @@ readonly class MigrationRunner
 			return $this->isRecordedElsewhere($package, $migrationFile, $checksum, $sqlFile, $logger);
 		}
 
-		if ($existingChecksum !== $checksum) {
+		if (!in_array($existingChecksum, $this->checksumVariants($checksum, $sqlFile), true)) {
 			$this->log($logger, '<error>ERROR Migration "' . $migrationFile . '" failed: checksum mismatch.</error>');
 			throw new \RuntimeException('Migration "' . $migrationFile . '" was modified after execution.');
 		}
@@ -223,9 +239,7 @@ readonly class MigrationRunner
 		?callable $logger,
 	): bool
 	{
-		// The copies may differ in line endings only (Git checkout on Windows), which is still the same migration.
-		$content = str_replace("\r\n", "\n", (string) file_get_contents($sqlFile));
-		$checksums = [$checksum, sha1($content), sha1(str_replace("\n", "\r\n", $content))];
+		$checksums = $this->checksumVariants($checksum, $sqlFile);
 		if (array_intersect($checksums, $this->repository->getChecksumsElsewhere($migrationFile, $package)) === []) {
 			return false;
 		}
@@ -233,6 +247,18 @@ readonly class MigrationRunner
 		$this->repository->insertMigration($package, $migrationFile, $checksum);
 		$this->log($logger, '<comment>SKIP Migration "' . $migrationFile . '" already executed from another location.</comment>');
 		return true;
+	}
+
+
+	/**
+	 * Checksums of the file with LF and with CRLF line endings. Git may change line endings on checkout
+	 * (e.g. on Windows), which is still the same migration and must not count as a change.
+	 * @return list<string>
+	 */
+	private function checksumVariants(string $checksum, string $sqlFile): array
+	{
+		$content = str_replace("\r\n", "\n", (string) file_get_contents($sqlFile));
+		return [$checksum, sha1($content), sha1(str_replace("\n", "\r\n", $content))];
 	}
 
 

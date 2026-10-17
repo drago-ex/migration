@@ -11,6 +11,7 @@
 	],
 	"require": {
 		"php": ">=8.3 <9",
+		"composer-runtime-api": "^2.0",
 		"contributte/console": "^0.10",
 		"dibi/dibi": "^5.0"
 	},

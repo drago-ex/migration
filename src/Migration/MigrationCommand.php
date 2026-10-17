@@ -8,6 +8,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 
@@ -23,13 +24,17 @@ final class MigrationCommand extends Command
 
 	protected function configure(): void
 	{
-		$this->addArgument('path', InputArgument::REQUIRED, 'Path to SQL file or directory');
+		$this->addArgument('path', InputArgument::OPTIONAL, 'Path to SQL file or directory')
+			->addOption('packages', null, InputOption::VALUE_NONE, "Run the migrations of all installed packages in their order, then the project's migrations/");
 	}
 
 
 	protected function execute(InputInterface $input, OutputInterface $output): int
 	{
-		$path = $input->getArgument('path');
+		$path = MigrationTarget::resolve($input, $output);
+		if ($path === null) {
+			return Command::FAILURE;
+		}
 
 		try {
 			$this->migrationRunner->run($path, function (string $message) use ($output) {

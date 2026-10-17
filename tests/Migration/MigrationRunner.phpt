@@ -119,7 +119,7 @@ test('Migrations run in filename order and are skipped after recording their che
 });
 
 
-test('Migrations of a directory follow db-migration-order.json', function () {
+test('A list of files runs in its order', function () {
 	$GLOBALS['migrationEvents'] = [];
 	$GLOBALS['migrationChecksums'] = [];
 	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
@@ -128,9 +128,9 @@ test('Migrations of a directory follow db-migration-order.json', function () {
 	try {
 		file_put_contents($directory . '/001_roles.sql', 'SELECT 1;');
 		file_put_contents($directory . '/001_users.sql', 'SELECT 2;');
-		Drago\Migration\MigrationFiles::writeOrder($directory, ['001_users.sql', '001_roles.sql']);
 
-		(new MigrationRunner(new MigrationRunnerTestRepository))->run($directory);
+		$files = [$directory . '/001_users.sql', $directory . '/001_roles.sql'];
+		(new MigrationRunner(new MigrationRunnerTestRepository))->run($files);
 		$run = array_values(array_filter($GLOBALS['migrationEvents'], fn(array $event): bool => $event[0] === 'sql'));
 		Assert::same(['001_users.sql', '001_roles.sql'], array_column($run, 1));
 	} finally {
@@ -207,6 +207,24 @@ test('A copy that differs only in line endings counts as the same migration', fu
 		Assert::contains(['insert', 'core', '001_users.sql', sha1_file($file)], $GLOBALS['migrationEvents']);
 	} finally {
 		unset($GLOBALS['migrationChecksumsElsewhere']);
+		unlink($file);
+		rmdir($directory);
+	}
+});
+
+
+test('A recorded migration whose line endings changed is not taken as modified', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = ['001_users.sql' => sha1("CREATE TABLE users (\r\n    id INT\r\n);\r\n")];
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($directory);
+	$file = $directory . '/001_users.sql';
+	file_put_contents($file, "CREATE TABLE users (\n    id INT\n);\n");
+
+	try {
+		(new MigrationRunner(new MigrationRunnerTestRepository))->run($file);
+		Assert::same(['lock', 'release'], array_column($GLOBALS['migrationEvents'], 0));
+	} finally {
 		unlink($file);
 		rmdir($directory);
 	}
