@@ -49,9 +49,9 @@ readonly class MigrationRunnerTestRepository extends Repository
 	}
 
 
-	public function getPackageChecksums(string $file): array
+	public function getChecksumsElsewhere(string $file, string $package): array
 	{
-		return $GLOBALS['migrationPackageChecksums'][$file] ?? [];
+		return $GLOBALS['migrationChecksumsElsewhere'][$file] ?? [];
 	}
 
 
@@ -149,7 +149,7 @@ test('An exported migration that already ran from its package is recorded, not r
 	$changed = $directory . '/002_roles.sql';
 	file_put_contents($same, 'SELECT 1;');
 	file_put_contents($changed, 'SELECT 2;');
-	$GLOBALS['migrationPackageChecksums'] = [
+	$GLOBALS['migrationChecksumsElsewhere'] = [
 		'001_users.sql' => [sha1_file($same)],
 		'002_roles.sql' => ['other-checksum'],
 	];
@@ -162,9 +162,52 @@ test('An exported migration that already ran from its package is recorded, not r
 		Assert::notContains(['sql', '001_users.sql'], $events);
 		Assert::contains(['sql', '002_roles.sql'], $events);
 	} finally {
-		unset($GLOBALS['migrationPackageChecksums']);
+		unset($GLOBALS['migrationChecksumsElsewhere']);
 		unlink($same);
 		unlink($changed);
+		rmdir($directory);
+	}
+});
+
+
+test('A package migration run from vendor/ after it ran from migrations/ is recorded, not run again', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8)) . '/vendor/acme/users/migrations';
+	mkdir($directory, recursive: true);
+	$file = $directory . '/001_users.sql';
+	file_put_contents($file, 'SELECT 1;');
+	$GLOBALS['migrationChecksumsElsewhere'] = ['001_users.sql' => [sha1_file($file)]];
+
+	try {
+		(new MigrationRunner(new MigrationRunnerTestRepository))->run($directory);
+		$events = $GLOBALS['migrationEvents'];
+
+		Assert::contains(['insert', 'acme/users', '001_users.sql', sha1_file($file)], $events);
+		Assert::notContains(['sql', '001_users.sql'], $events);
+	} finally {
+		unset($GLOBALS['migrationChecksumsElsewhere']);
+		unlink($file);
+	}
+});
+
+
+test('A copy that differs only in line endings counts as the same migration', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($directory);
+	$file = $directory . '/001_users.sql';
+	file_put_contents($file, "CREATE TABLE users (\n    id INT\n);\n");
+	$GLOBALS['migrationChecksumsElsewhere'] = ['001_users.sql' => [sha1("CREATE TABLE users (\r\n    id INT\r\n);\r\n")]];
+
+	try {
+		(new MigrationRunner(new MigrationRunnerTestRepository))->run($file);
+		Assert::notContains(['sql', '001_users.sql'], $GLOBALS['migrationEvents']);
+		Assert::contains(['insert', 'core', '001_users.sql', sha1_file($file)], $GLOBALS['migrationEvents']);
+	} finally {
+		unset($GLOBALS['migrationChecksumsElsewhere']);
+		unlink($file);
 		rmdir($directory);
 	}
 });

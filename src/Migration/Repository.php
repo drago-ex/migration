@@ -70,17 +70,18 @@ readonly class Repository
 
 
 	/**
-	 * Checksums of a file recorded under a package, i.e. run directly from vendor/ (e.g. by older drago-setup).
+	 * Checksums of a file recorded under other packages, i.e. the same file run from another place
+	 * (from vendor/ of its package, or from the project's migrations/ as core).
 	 * @return list<string>
 	 * @throws Exception
 	 */
-	public function getPackageChecksums(string $file): array
+	public function getChecksumsElsewhere(string $file, string $package): array
 	{
 		$checksums = $this->connection
 			->select('checksum')
 			->from('migrations')
 			->where('migration_file = %s', $file)
-			->and('package != %s', 'core')
+			->and('package != %s', $package)
 			->fetchPairs(null, 'checksum');
 
 		return array_values(array_map('strval', $checksums));

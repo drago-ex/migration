@@ -38,7 +38,14 @@ php vendor/bin/migration db:migrate migrations
 
 # Run a single migration file
 php vendor/bin/migration db:migrate migrations/001_example.sql
+
+# Run the migrations of one installed package straight from vendor/
+php vendor/bin/migration db:migrate vendor/drago-ex/project-auth/migrations
 ```
+
+A directory runs in the order from its `db-migration-order.json` (see [Order of migrations](#order-of-migrations)),
+otherwise by file name. Running one package or one file is always possible, also in a project whose migrations
+are otherwise exported into `migrations/`: the same file is never run twice (see the notes below).
 
 ## Record Existing Migrations
 
@@ -84,6 +91,20 @@ by file name; without the file, all migrations run by file name. File names are 
 already recorded in the `migrations` table stay recorded.
 
 When a package uses tables of another package, give it a higher `commands-priority` than that package.
+
+The priority is read from `extra.drago-tools.commands-priority` in the `composer.json` of each package; it is the key
+Drago packages use, but `drago-ex/project-tools` does not have to be installed. In projects outside Drago, where
+packages have no priority, `sql-export` still works: all packages get the default 100, so they follow by package
+name, and the files of each package by name. To make a package of yours run earlier or later, add the key to its
+`composer.json`:
+
+```json
+"extra": {
+    "drago-tools": {
+        "commands-priority": 30
+    }
+}
+```
 
 ## Automated Package Setup
 
@@ -146,9 +167,9 @@ CREATE TABLE IF NOT EXISTS migrations (
   migration that fails after such a statement stays partially applied and is not recorded. Keep one schema
   change per file, so a failed migration can be fixed and run again.
 - **Where a migration is recorded.** A file inside `vendor/<vendor>/<package>/` is recorded under
-  `<vendor>/<package>`, any other file under `core`, always together with its file name. Run migrations from the
-  project's `migrations/` directory. A file that already ran from `vendor/` (e.g. by an older `drago-setup`)
-  with the same content is not run again from `migrations/`; it is only recorded under `core`.
+  `<vendor>/<package>`, any other file under `core`, always together with its file name. A package migration can
+  run from both places (one package from `vendor/`, all of them exported into `migrations/`): a file with the same
+  name and content that already ran from the other place is not run again, it is only recorded for this one.
 - `sql-export` skips files that already exist with the same content. A different file with the same name,
   for example from another package, is reported as a conflict and the command ends with exit code 1.
 - `vendor/bin/migration` runs from the project root and loads `app/Bootstrap.php`; it calls

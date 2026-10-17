@@ -91,7 +91,7 @@ readonly class MigrationRunner
 	private function runMigration(string $sqlFile, ?callable $logger = null): void
 	{
 		[$package, $migrationFile, $checksum] = $this->describe($sqlFile);
-		if ($this->isRecorded($package, $migrationFile, $checksum, $logger)) {
+		if ($this->isRecorded($package, $migrationFile, $checksum, $sqlFile, $logger)) {
 			return;
 		}
 
@@ -116,7 +116,7 @@ readonly class MigrationRunner
 	private function baselineMigration(string $sqlFile, ?callable $logger = null): void
 	{
 		[$package, $migrationFile, $checksum] = $this->describe($sqlFile);
-		if ($this->isRecorded($package, $migrationFile, $checksum, $logger)) {
+		if ($this->isRecorded($package, $migrationFile, $checksum, $sqlFile, $logger)) {
 			return;
 		}
 
@@ -162,11 +162,17 @@ readonly class MigrationRunner
 	 * True when the migration is already recorded; a recorded file that was changed is an error.
 	 * @throws Exception
 	 */
-	private function isRecorded(string $package, string $migrationFile, string $checksum, ?callable $logger): bool
+	private function isRecorded(
+		string $package,
+		string $migrationFile,
+		string $checksum,
+		string $sqlFile,
+		?callable $logger,
+	): bool
 	{
 		$existingChecksum = $this->repository->getMigrationChecksum($package, $migrationFile);
 		if ($existingChecksum === null) {
-			return $package === 'core' && $this->isRecordedUnderPackage($migrationFile, $checksum, $logger);
+			return $this->isRecordedElsewhere($package, $migrationFile, $checksum, $sqlFile, $logger);
 		}
 
 		if ($existingChecksum !== $checksum) {
@@ -205,17 +211,27 @@ readonly class MigrationRunner
 
 
 	/**
-	 * A migration exported into the project (recorded as core) may already have run from vendor/ under its package,
-	 * e.g. by an older drago-setup. The same file with the same content is not run again, only recorded as core.
+	 * A package migration can run from vendor/ (recorded under the package) or exported into the project's
+	 * migrations/ (recorded as core). The same file with the same content that already ran from the other place
+	 * is not run again, only recorded for this one, so both ways can be used in one project.
 	 */
-	private function isRecordedUnderPackage(string $migrationFile, string $checksum, ?callable $logger): bool
+	private function isRecordedElsewhere(
+		string $package,
+		string $migrationFile,
+		string $checksum,
+		string $sqlFile,
+		?callable $logger,
+	): bool
 	{
-		if (!in_array($checksum, $this->repository->getPackageChecksums($migrationFile), true)) {
+		// The copies may differ in line endings only (Git checkout on Windows), which is still the same migration.
+		$content = str_replace("\r\n", "\n", (string) file_get_contents($sqlFile));
+		$checksums = [$checksum, sha1($content), sha1(str_replace("\n", "\r\n", $content))];
+		if (array_intersect($checksums, $this->repository->getChecksumsElsewhere($migrationFile, $package)) === []) {
 			return false;
 		}
 
-		$this->repository->insertMigration('core', $migrationFile, $checksum);
-		$this->log($logger, '<comment>SKIP Migration "' . $migrationFile . '" already executed from its package.</comment>');
+		$this->repository->insertMigration($package, $migrationFile, $checksum);
+		$this->log($logger, '<comment>SKIP Migration "' . $migrationFile . '" already executed from another location.</comment>');
 		return true;
 	}
 
