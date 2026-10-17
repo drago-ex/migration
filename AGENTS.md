@@ -19,9 +19,9 @@ Use this file as package-specific guidance when working in this repository. Keep
 - `composer.json`: package metadata, dependency constraints, autoloading, and available Composer scripts.
 
 ## Key Parts
-- `MigrationRunner` runs `.sql` files in name order under a `GET_LOCK()` lock, records checksums per package (`vendor/<vendor>/<package>` or `core`) and file name, and stops on a changed file. MySQL and MariaDB only.
+- `MigrationRunner` runs `.sql` files in the order of `MigrationFiles` (`db-migration-order.json` from `sql-export`, otherwise by name) under a `GET_LOCK()` lock, records checksums per package (`vendor/<vendor>/<package>` or `core`) and file name, and stops on a changed file. MySQL and MariaDB only.
 - A failure to release the lock must not hide the migration error. MySQL commits DDL statements immediately, so transactions do not undo them.
-- `bin/sql-export` copies package migrations into the project; a different file with the same name is a conflict (exit code 1).
+- `bin/sql-export` copies package migrations into the project and writes `db-migration-order.json` (packages by `extra.drago-tools.commands-priority`, default 100, then by file name); a different file with the same name (ignoring line endings) is a conflict (exit code 1). File names are never changed, because they identify recorded migrations.
 - Unit tests use a fake `Repository` (`tests/Migration/MigrationRunner.phpt`).
 
 ## Dependencies

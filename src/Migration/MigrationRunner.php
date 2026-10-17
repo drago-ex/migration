@@ -57,15 +57,7 @@ readonly class MigrationRunner
 			$this->ensureMigrationsTable($logger);
 
 			if (is_dir($path)) {
-				$sqlFiles = glob(rtrim($path, '/') . '/*.sql');
-
-				if ($sqlFiles === false) {
-					throw new \RuntimeException(sprintf('Unable to read directory "%s".', $path));
-				}
-
-				sort($sqlFiles);
-
-				foreach ($sqlFiles as $file) {
+				foreach (MigrationFiles::list($path) as $file) {
 					$handler($file, $logger);
 				}
 			} elseif (is_file($path)) {

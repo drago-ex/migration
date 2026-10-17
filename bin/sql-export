@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Composer\InstalledVersions;
+use Drago\Migration\MigrationFiles;
 
 $root = getcwd();
 
@@ -63,6 +64,9 @@ $copied = 0;
 $skipped = 0;
 $conflicts = 0;
 
+/** @var list<array{name: string, priority: int, files: list<string>}> $exported */
+$exported = [];
+
 foreach (InstalledVersions::getInstalledPackages() as $packageName) {
 	if ($packageName === $rootPackageName) {
 		continue;
@@ -74,6 +78,7 @@ foreach (InstalledVersions::getInstalledPackages() as $packageName) {
 		continue;
 	}
 
+	$packageFiles = [];
 	$migrationDirs = [
 			$packagePath . '/migration',
 			$packagePath . '/migrations',
@@ -99,24 +104,41 @@ foreach (InstalledVersions::getInstalledPackages() as $packageName) {
 
 			if (file_exists($targetFile)) {
 				// A different file with the same name (e.g. from another package) would never be exported.
-				if (sha1_file($targetFile) !== sha1_file($file)) {
+				if (!isSameSql($targetFile, $file)) {
 					echo "{$red}CONFLICT:{$reset} {$packageName} -> {$filename} differs from the existing file\n";
 					$conflicts++;
 				} else {
 					echo "{$yellow}SKIP exists:{$reset} {$filename}\n";
 					$skipped++;
 				}
+
+				// The file of that name is in the target directory either way, so it keeps its place in the order.
+				$packageFiles[] = $filename;
 				continue;
 			}
 
 			if (copy($file, $targetFile)) {
 				echo "{$green}COPIED:{$reset} {$packageName} -> {$filename}\n";
 				$copied++;
+				$packageFiles[] = $filename;
 			} else {
 				echo "{$red}ERROR:{$reset} Failed copying {$file}\n";
 			}
 		}
 	}
+
+	if ($packageFiles !== []) {
+		sort($packageFiles);
+		$exported[] = ['name' => $packageName, 'priority' => packagePriority($packagePath), 'files' => $packageFiles];
+	}
+}
+
+// Packages run in the order of their commands-priority (as drago-setup runs their migration commands),
+// so a package can use the tables of the packages it builds on.
+usort($exported, fn(array $a, array $b): int => [$a['priority'], $a['name']] <=> [$b['priority'], $b['name']]);
+if ($exported !== []) {
+	MigrationFiles::writeOrder($targetDir, array_merge(...array_column($exported, 'files')));
+	echo "\n{$blue}INFO Order of the migrations written to {$targetLabel}/" . MigrationFiles::OrderFile . "{$reset}\n";
 }
 
 if ($found === 0) {
@@ -131,6 +153,24 @@ if ($conflicts > 0) {
 	echo "{$red}ERROR {$conflicts} file(s) were not exported because a different file with the same name exists. Rename one of them.{$reset}\n";
 	exit(1);
 }
+
+/** Compares the files regardless of line endings, which Git may change on checkout. */
+function isSameSql(string $a, string $b): bool
+{
+	$normalize = static fn(string $file): string => str_replace("\r\n", "\n", (string) file_get_contents($file));
+	return $normalize($a) === $normalize($b);
+}
+
+
+function packagePriority(string $packagePath): int
+{
+	$composer = is_file($packagePath . '/composer.json')
+		? json_decode((string) file_get_contents($packagePath . '/composer.json'), true)
+		: null;
+	$priority = is_array($composer) ? ($composer['extra']['drago-tools']['commands-priority'] ?? 100) : 100;
+	return is_int($priority) ? $priority : 100;
+}
+
 
 function isAbsolutePath(string $path): bool
 {

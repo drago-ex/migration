@@ -68,6 +68,22 @@ php vendor/bin/sql-export temp/sql
 ```
 Existing files with the same content are skipped, so the command can be safely run repeatedly.
 
+### Order of migrations
+
+Migrations of different packages often depend on each other (a table of one package refers to a table of another),
+so after copying the files `sql-export` writes their order into `db-migration-order.json` in the target directory:
+
+- packages follow their `extra.drago-tools.commands-priority` from `composer.json` (lower first, default 100),
+  the same order in which `drago-setup` runs their migration commands; packages with the same priority follow by name,
+- the migrations of one package follow by file name.
+
+`db:migrate`, `db:baseline` and the web installer of `drago-ex/project-install` run a directory in this order
+(`Drago\Migration\MigrationFiles`). Files not listed there, such as the project's own migrations, run after them
+by file name; without the file, all migrations run by file name. File names are not changed, so migrations
+already recorded in the `migrations` table stay recorded.
+
+When a package uses tables of another package, give it a higher `commands-priority` than that package.
+
 ## Automated Package Setup
 
 Projects using [drago-ex/project-tools](https://github.com/drago-ex/project-tools) can run package-defined migration commands through:
