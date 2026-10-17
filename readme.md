@@ -54,7 +54,7 @@ the next time (see [Where a migration is recorded](#notes)).
 Migrations of different packages often depend on each other (a table of one package refers to a table of another).
 With `--packages`, `db:migrate` collects the migrations straight from `vendor/`, nothing is copied:
 
-1. installed packages that have a `migrations/` directory, ordered by `extra.drago-tools.commands-priority`
+1. installed packages that have a `migrations/` directory, ordered by `extra.drago-tools.migration-priority`
    from their `composer.json` (lower first, default 100) and then by package name,
 2. inside a package, its files by name,
 3. at the end, the project's own `migrations/` directory, by file name.
@@ -72,7 +72,7 @@ Migrations in the order they run:
 The web installer of `drago-ex/project-install` and the `db:migrate` operation of `drago-setup` use the same list
 (`Drago\Migration\MigrationFiles::forProject()`), so the order is the same everywhere.
 
-When a package uses tables of another package, give it a higher `commands-priority` than that package.
+When a package uses tables of another package, give it a higher `migration-priority` than that package.
 
 The priority is read from the `composer.json` of each package; it is the key Drago packages use, but
 `drago-ex/project-tools` does not have to be installed. In projects outside Drago, where packages have no priority,
@@ -82,10 +82,14 @@ add the key to its `composer.json`:
 ```json
 "extra": {
     "drago-tools": {
-        "commands-priority": 30
+        "migration-priority": 30
     }
 }
 ```
+
+`migration-priority` is only for migrations; `commands-priority` orders the setup commands of `drago-setup`.
+Packages released before `migration-priority` existed set the order by `commands-priority`, so it is used when
+`migration-priority` is missing.
 
 ## Record Existing Migrations
 
@@ -123,7 +127,7 @@ php vendor/bin/drago-setup
 ```
 
 Packages do not need their own migration commands; they put SQL files into `migrations/` and set
-`extra.drago-tools.commands-priority`, which decides their place in the order.
+`extra.drago-tools.migration-priority`, which decides their place in the order.
 
 ## Register Migration Extension in Nette
 
@@ -164,7 +168,7 @@ CREATE TABLE IF NOT EXISTS migrations (
 - Transactional execution - each migration runs in a transaction (see the note on DDL below)
 - Database locking - `GET_LOCK()` prevents concurrent runs
 - Package-aware migrations - files from `vendor/<vendor>/<package>/` are recorded under that package name
-- Package order - `--packages` runs the migrations of all packages straight from `vendor/` by `commands-priority`
+- Package order - `--packages` runs the migrations of all packages straight from `vendor/` by `migration-priority`
 - Line endings - a migration that differs only in line endings is not taken as changed
 - Automatic migrations table setup on first run
 - Symfony Console integration - clean CLI output

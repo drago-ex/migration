@@ -72,12 +72,12 @@ test('A directory lists its migrations by name', function () {
 });
 
 
-test('Packages follow commands-priority, then name; the project\'s own migrations come last', function () {
+test('Packages follow migration-priority, then name; the project\'s own migrations come last', function () {
 	$root = createTree([
-		'vendor/acme/permission/composer.json' => '{"extra": {"drago-tools": {"commands-priority": 20}}}',
+		'vendor/acme/permission/composer.json' => '{"extra": {"drago-tools": {"migration-priority": 20, "commands-priority": 5}}}',
 		'vendor/acme/permission/migrations/001_roles.sql' => 'roles',
 		'vendor/acme/permission/migrations/002_users_roles.sql' => 'users_roles',
-		'vendor/acme/auth/composer.json' => '{"extra": {"drago-tools": {"commands-priority": 10}}}',
+		'vendor/acme/auth/composer.json' => '{"extra": {"drago-tools": {"migration-priority": 10}}}',
 		'vendor/acme/auth/migrations/001_users.sql' => 'users',
 		'vendor/acme/settings/composer.json' => '{}',
 		'vendor/acme/settings/migrations/001_settings.sql' => 'settings',
@@ -100,6 +100,18 @@ test('Packages follow commands-priority, then name; the project\'s own migration
 	], plan($root));
 
 	Assert::same('   1. 001_users.sql                            (acme/auth, priority 10)', MigrationFiles::describe(MigrationFiles::forProject($root))[0]);
+});
+
+
+test('Packages released before migration-priority keep their order by commands-priority', function () {
+	$root = createTree([
+		'vendor/acme/old/composer.json' => '{"extra": {"drago-tools": {"commands-priority": 10}}}',
+		'vendor/acme/new/composer.json' => '{"extra": {"drago-tools": {"migration-priority": 20}}}',
+	]);
+
+	Assert::same(10, MigrationFiles::packagePriority("$root/vendor/acme/old"));
+	Assert::same(20, MigrationFiles::packagePriority("$root/vendor/acme/new"));
+	Assert::same(MigrationFiles::DefaultPriority, MigrationFiles::packagePriority("$root/vendor/acme/missing"));
 });
 
 

@@ -20,7 +20,7 @@ Use this file as package-specific guidance when working in this repository. Keep
 
 ## Key Parts
 - `MigrationRunner` runs a file, a directory (by file name) or a list of files (in its order) under a `GET_LOCK()` lock, records checksums per package (`vendor/<vendor>/<package>` or `core`) and file name, and stops on a changed file. MySQL and MariaDB only.
-- `MigrationFiles::forProject()` builds the list for `db:migrate --packages` / `db:baseline --packages`, the web installer (`drago-ex/project-install`) and `drago-setup` (`drago-ex/project-tools`): package migrations straight from `vendor/` ordered by `extra.drago-tools.commands-priority` (default 100) and package name, files by name, then the project's `migrations/` (copies identical to a package migration are left out). Nothing is copied.
+- `MigrationFiles::forProject()` builds the list for `db:migrate --packages` / `db:baseline --packages`, the web installer (`drago-ex/project-install`) and `drago-setup` (`drago-ex/project-tools`): package migrations straight from `vendor/` ordered by `extra.drago-tools.migration-priority` (falls back to `commands-priority` of packages released before the key existed; default 100) and package name, files by name, then the project's `migrations/` (copies identical to a package migration are left out). Nothing is copied.
 - Line endings never count as a change: checksums are compared with LF and CRLF variants.
 - The same file with the same checksum recorded under another package (`vendor/` vs. `core`) counts as executed and is only recorded for the current location.
 - A failure to release the lock must not hide the migration error. MySQL commits DDL statements immediately, so transactions do not undo them; keep one schema change per file.

@@ -11,7 +11,7 @@ use Composer\InstalledVersions;
  * Finds migration files and the order they must run in.
  *
  * Migrations of different packages often depend on each other (a table of one package refers to a table
- * of another), so the packages follow their extra.drago-tools.commands-priority from composer.json
+ * of another), so the packages follow their extra.drago-tools.migration-priority from composer.json
  * (lower first, default 100, then by name). They run straight from vendor/, nothing is copied.
  */
 final class MigrationFiles
@@ -113,13 +113,15 @@ final class MigrationFiles
 
 
 	/**
-	 * extra.drago-tools.commands-priority from the composer.json of a package; drago-ex/project-tools is not needed.
+	 * extra.drago-tools.migration-priority from the composer.json of a package; drago-ex/project-tools is not needed.
+	 * Packages released before this key existed set the order by commands-priority, which is used as a fallback.
 	 */
 	public static function packagePriority(string $packagePath): int
 	{
 		$composerFile = $packagePath . '/composer.json';
 		$composer = is_file($composerFile) ? json_decode((string) file_get_contents($composerFile), true) : null;
-		$priority = is_array($composer) ? ($composer['extra']['drago-tools']['commands-priority'] ?? null) : null;
+		$tools = is_array($composer) ? ($composer['extra']['drago-tools'] ?? null) : null;
+		$priority = is_array($tools) ? ($tools['migration-priority'] ?? $tools['commands-priority'] ?? null) : null;
 		return is_int($priority) ? $priority : self::DefaultPriority;
 	}
 
