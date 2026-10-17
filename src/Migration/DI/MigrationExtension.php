@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drago\Migration\DI;
 
+use Drago\Migration\BaselineCommand;
 use Drago\Migration\MigrationCommand;
 use Drago\Migration\MigrationRunner;
 use Drago\Migration\Repository;
@@ -38,6 +39,10 @@ final class MigrationExtension extends CompilerExtension
 
 		$builder->addDefinition($this->prefix('command'))
 			->setFactory(MigrationCommand::class, ['@' . $this->prefix('runner')])
+			->addTag('console.command');
+
+		$builder->addDefinition($this->prefix('baselineCommand'))
+			->setFactory(BaselineCommand::class, ['@' . $this->prefix('runner')])
 			->addTag('console.command');
 
 		$this->compiler->addExportedType(MigrationCommand::class);

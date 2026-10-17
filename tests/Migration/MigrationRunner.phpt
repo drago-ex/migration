@@ -31,12 +31,15 @@ readonly class MigrationRunnerTestRepository extends Repository
 	public function releaseLock(string $name): void
 	{
 		$GLOBALS['migrationEvents'][] = ['release', $name];
+		if ($GLOBALS['migrationReleaseFails'] ?? false) {
+			throw new RuntimeException('Unable to release migration lock.');
+		}
 	}
 
 
 	public function migrationsTableExists(): bool
 	{
-		return true;
+		return $GLOBALS['migrationTableExists'] ?? true;
 	}
 
 
@@ -146,6 +149,144 @@ test('A migration failure rolls back and releases the lock', function () {
 		Assert::exception(fn() => $runner->run($file), RuntimeException::class, 'SQL execution failed.');
 		Assert::contains(['rollback'], $GLOBALS['migrationEvents']);
 		Assert::same('release', $GLOBALS['migrationEvents'][array_key_last($GLOBALS['migrationEvents'])][0]);
+	} finally {
+		unlink($file);
+		rmdir($directory);
+	}
+});
+
+
+test('Nothing runs when the lock cannot be acquired', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationLock'] = false;
+
+	try {
+		$runner = new MigrationRunner(new MigrationRunnerTestRepository);
+		Assert::exception(
+			fn() => $runner->run(__DIR__),
+			RuntimeException::class,
+			'Unable to acquire migration lock.%a%',
+		);
+		Assert::same(['lock'], array_column($GLOBALS['migrationEvents'], 0));
+	} finally {
+		unset($GLOBALS['migrationLock']);
+	}
+});
+
+
+test('A failure to release the lock does not hide the migration error', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$GLOBALS['migrationReleaseFails'] = true;
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($directory);
+	$file = $directory . '/001_failure.sql';
+	file_put_contents($file, 'SELECT failure;');
+
+	try {
+		$runner = new MigrationRunner(new MigrationRunnerTestRepository(failOnSql: true));
+		Assert::exception(fn() => $runner->run($file), RuntimeException::class, 'SQL execution failed.');
+	} finally {
+		unset($GLOBALS['migrationReleaseFails']);
+		unlink($file);
+		rmdir($directory);
+	}
+});
+
+
+test('A failure to release the lock is reported after successful migrations', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$GLOBALS['migrationReleaseFails'] = true;
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($directory);
+	$file = $directory . '/001_ok.sql';
+	file_put_contents($file, 'SELECT 1;');
+
+	try {
+		$runner = new MigrationRunner(new MigrationRunnerTestRepository);
+		Assert::exception(fn() => $runner->run($file), RuntimeException::class, 'Unable to release migration lock.');
+	} finally {
+		unset($GLOBALS['migrationReleaseFails']);
+		unlink($file);
+		rmdir($directory);
+	}
+});
+
+
+test('The migrations table is created first and recorded under this package', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$GLOBALS['migrationTableExists'] = false;
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($directory);
+
+	try {
+		(new MigrationRunner(new MigrationRunnerTestRepository))->run($directory);
+		Assert::same(['sql', '000_migrations.sql'], $GLOBALS['migrationEvents'][1]);
+		Assert::same(['insert', 'drago-ex/migration', '000_migrations.sql'], array_slice($GLOBALS['migrationEvents'][2], 0, 3));
+	} finally {
+		unset($GLOBALS['migrationTableExists']);
+		rmdir($directory);
+	}
+});
+
+
+test('Migrations inside vendor are recorded under their package name', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8)) . '/vendor/acme/shop/migrations';
+	mkdir($directory, 0o777, true);
+	$file = $directory . '/001_orders.sql';
+	file_put_contents($file, 'SELECT 1;');
+
+	try {
+		(new MigrationRunner(new MigrationRunnerTestRepository))->run($file);
+		$insert = array_values(array_filter($GLOBALS['migrationEvents'], fn(array $event): bool => $event[0] === 'insert'))[0];
+		Assert::same(['insert', 'acme/shop', '001_orders.sql'], array_slice($insert, 0, 3));
+	} finally {
+		unlink($file);
+	}
+});
+
+
+test('Baseline records migrations without running their SQL', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($directory);
+	file_put_contents($directory . '/001_first.sql', 'SELECT 1;');
+	file_put_contents($directory . '/002_second.sql', 'SELECT 2;');
+
+	try {
+		$runner = new MigrationRunner(new MigrationRunnerTestRepository);
+		$runner->baseline($directory);
+		Assert::same(['lock', 'insert', 'insert', 'release'], array_column($GLOBALS['migrationEvents'], 0));
+		Assert::same(['001_first.sql', '002_second.sql'], array_keys($GLOBALS['migrationChecksums']));
+
+		// A later run skips the recorded files
+		$GLOBALS['migrationEvents'] = [];
+		$runner->run($directory);
+		Assert::same(['lock', 'release'], array_column($GLOBALS['migrationEvents'], 0));
+	} finally {
+		unlink($directory . '/001_first.sql');
+		unlink($directory . '/002_second.sql');
+		rmdir($directory);
+	}
+});
+
+
+test('Baseline refuses a recorded migration that was changed', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = ['001_changed.sql' => 'old-checksum'];
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($directory);
+	$file = $directory . '/001_changed.sql';
+	file_put_contents($file, 'SELECT changed;');
+
+	try {
+		$runner = new MigrationRunner(new MigrationRunnerTestRepository);
+		Assert::exception(fn() => $runner->baseline($file), RuntimeException::class, 'Migration "001_changed.sql" was modified after execution.');
 	} finally {
 		unlink($file);
 		rmdir($directory);

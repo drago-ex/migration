@@ -15,6 +15,7 @@ It allows you to run SQL migrations from files or directories with checksum vali
 - Nette Framework
 - Symfony Console
 - dibi
+- MySQL or MariaDB
 - Composer
 
 ## Installation
@@ -39,6 +40,19 @@ php vendor/bin/migration db:migrate migrations
 php vendor/bin/migration db:migrate migrations/001_example.sql
 ```
 
+## Record Existing Migrations
+
+When the changes of some migrations are already in the database but not recorded in the `migrations`
+table (for example a database set up by an older web installer), record them without running their SQL:
+
+```bash
+php vendor/bin/migration db:baseline migrations
+```
+
+Already recorded files are skipped and a recorded file that was changed is reported as an error, as with
+`db:migrate`. Use it only for files whose changes really are in the database; `db:migrate` never runs a
+recorded file again.
+
 ## Export SQL Migrations
 
 Export migration SQL files from installed Composer packages:
@@ -52,7 +66,7 @@ Use an optional target directory argument to export files elsewhere:
 php vendor/bin/sql-export db
 php vendor/bin/sql-export temp/sql
 ```
-Existing files are skipped, so the command can be safely run repeatedly.
+Existing files with the same content are skipped, so the command can be safely run repeatedly.
 
 ## Automated Package Setup
 
@@ -100,15 +114,25 @@ CREATE TABLE IF NOT EXISTS migrations (
 
 ## Features
 
-- Checksum validation - detects modified migrations
-- Transactional execution - safe rollback on failure
-- Database locking - prevents concurrent runs
-- Package-aware migrations - supports vendor-based migrations
+- Checksum validation - a migration changed after it was executed stops the run
+- Transactional execution - each migration runs in a transaction (see the note on DDL below)
+- Database locking - `GET_LOCK()` prevents concurrent runs
+- Package-aware migrations - files from `vendor/<vendor>/<package>/` are recorded under that package name
 - Automatic migrations table setup on first run
 - Symfony Console integration - clean CLI output
 
 ## Notes
 
-- This package is designed for Nette Framework projects.
-- The provided CLI binary expects a Nette project structure with app/Bootstrap.php.
-- For non-Nette projects, a custom bootstrap script is required.
+- **MySQL or MariaDB only.** The runner uses `GET_LOCK()`, `RELEASE_LOCK()`, `INFORMATION_SCHEMA` and `DATABASE()`.
+- **DDL is not rolled back.** MySQL commits statements like `CREATE`, `ALTER` and `DROP` immediately, so a
+  migration that fails after such a statement stays partially applied and is not recorded. Keep one schema
+  change per file, so a failed migration can be fixed and run again.
+- **Where a migration is recorded.** A file inside `vendor/<vendor>/<package>/` is recorded under
+  `<vendor>/<package>`, any other file under `core`, always together with its file name. Run each migration
+  from one place only: a package migration first run from `vendor/` (for example by `drago-setup`) and later
+  exported with `sql-export` into `migrations/` gets a different record and would run again.
+- `sql-export` skips files that already exist with the same content. A different file with the same name,
+  for example from another package, is reported as a conflict and the command ends with exit code 1.
+- `vendor/bin/migration` runs from the project root and loads `app/Bootstrap.php`; it calls
+  `App\Bootstrap::bootConsoleApplication()`, which must return the DI container with the migration and
+  console extensions registered. For non-Nette projects, a custom bootstrap script is required.

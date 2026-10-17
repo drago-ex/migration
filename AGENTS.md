@@ -18,6 +18,12 @@ Use this file as package-specific guidance when working in this repository. Keep
 - `.github/`: CI workflows; keep their PHP versions and commands consistent with Composer and the package scripts.
 - `composer.json`: package metadata, dependency constraints, autoloading, and available Composer scripts.
 
+## Key Parts
+- `MigrationRunner` runs `.sql` files in name order under a `GET_LOCK()` lock, records checksums per package (`vendor/<vendor>/<package>` or `core`) and file name, and stops on a changed file. MySQL and MariaDB only.
+- A failure to release the lock must not hide the migration error. MySQL commits DDL statements immediately, so transactions do not undo them.
+- `bin/sql-export` copies package migrations into the project; a different file with the same name is a conflict (exit code 1).
+- Unit tests use a fake `Repository` (`tests/Migration/MigrationRunner.phpt`).
+
 ## Dependencies
 
 Composer constraints describe the package contract. Before changing integration behavior, inspect the source and the actual call sites in this package; do not infer runtime usage solely from dependency declarations.
