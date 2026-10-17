@@ -166,7 +166,7 @@ readonly class MigrationRunner
 	{
 		$existingChecksum = $this->repository->getMigrationChecksum($package, $migrationFile);
 		if ($existingChecksum === null) {
-			return false;
+			return $package === 'core' && $this->isRecordedUnderPackage($migrationFile, $checksum, $logger);
 		}
 
 		if ($existingChecksum !== $checksum) {
@@ -201,6 +201,22 @@ readonly class MigrationRunner
 		$this->repository->runSqlFile($sqlFile);
 		$this->repository->insertMigration('drago-ex/migration', basename($sqlFile), $checksum);
 		$this->log($logger, '<info>OK Migration table created.</info>');
+	}
+
+
+	/**
+	 * A migration exported into the project (recorded as core) may already have run from vendor/ under its package,
+	 * e.g. by an older drago-setup. The same file with the same content is not run again, only recorded as core.
+	 */
+	private function isRecordedUnderPackage(string $migrationFile, string $checksum, ?callable $logger): bool
+	{
+		if (!in_array($checksum, $this->repository->getPackageChecksums($migrationFile), true)) {
+			return false;
+		}
+
+		$this->repository->insertMigration('core', $migrationFile, $checksum);
+		$this->log($logger, '<comment>SKIP Migration "' . $migrationFile . '" already executed from its package.</comment>');
+		return true;
 	}
 
 

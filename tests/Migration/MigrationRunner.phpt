@@ -49,6 +49,12 @@ readonly class MigrationRunnerTestRepository extends Repository
 	}
 
 
+	public function getPackageChecksums(string $file): array
+	{
+		return $GLOBALS['migrationPackageChecksums'][$file] ?? [];
+	}
+
+
 	public function begin(): void
 	{
 		$GLOBALS['migrationEvents'][] = ['begin'];
@@ -108,6 +114,57 @@ test('Migrations run in filename order and are skipped after recording their che
 	} finally {
 		unlink($directory . '/001_first.sql');
 		unlink($directory . '/002_second.sql');
+		rmdir($directory);
+	}
+});
+
+
+test('Migrations of a directory follow db-migration-order.json', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($directory);
+
+	try {
+		file_put_contents($directory . '/001_roles.sql', 'SELECT 1;');
+		file_put_contents($directory . '/001_users.sql', 'SELECT 2;');
+		Drago\Migration\MigrationFiles::writeOrder($directory, ['001_users.sql', '001_roles.sql']);
+
+		(new MigrationRunner(new MigrationRunnerTestRepository))->run($directory);
+		$run = array_values(array_filter($GLOBALS['migrationEvents'], fn(array $event): bool => $event[0] === 'sql'));
+		Assert::same(['001_users.sql', '001_roles.sql'], array_column($run, 1));
+	} finally {
+		array_map('unlink', glob($directory . '/*'));
+		rmdir($directory);
+	}
+});
+
+
+test('An exported migration that already ran from its package is recorded, not run again', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$directory = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($directory);
+	$same = $directory . '/001_users.sql';
+	$changed = $directory . '/002_roles.sql';
+	file_put_contents($same, 'SELECT 1;');
+	file_put_contents($changed, 'SELECT 2;');
+	$GLOBALS['migrationPackageChecksums'] = [
+		'001_users.sql' => [sha1_file($same)],
+		'002_roles.sql' => ['other-checksum'],
+	];
+
+	try {
+		(new MigrationRunner(new MigrationRunnerTestRepository))->run($directory);
+		$events = $GLOBALS['migrationEvents'];
+
+		Assert::contains(['insert', 'core', '001_users.sql', sha1_file($same)], $events);
+		Assert::notContains(['sql', '001_users.sql'], $events);
+		Assert::contains(['sql', '002_roles.sql'], $events);
+	} finally {
+		unset($GLOBALS['migrationPackageChecksums']);
+		unlink($same);
+		unlink($changed);
 		rmdir($directory);
 	}
 });

@@ -71,10 +71,11 @@ Existing files with the same content are skipped, so the command can be safely r
 ### Order of migrations
 
 Migrations of different packages often depend on each other (a table of one package refers to a table of another),
-so after copying the files `sql-export` writes their order into `db-migration-order.json` in the target directory:
+so after copying the files `sql-export` writes their order into `db-migration-order.json` in the target directory
+and prints it as a numbered list with the package and priority of each file:
 
 - packages follow their `extra.drago-tools.commands-priority` from `composer.json` (lower first, default 100),
-  the same order in which `drago-setup` runs their migration commands; packages with the same priority follow by name,
+  the same priority `drago-setup` uses for package commands; packages with the same priority follow by name,
 - the migrations of one package follow by file name.
 
 `db:migrate`, `db:baseline` and the web installer of `drago-ex/project-install` run a directory in this order
@@ -86,14 +87,15 @@ When a package uses tables of another package, give it a higher `commands-priori
 
 ## Automated Package Setup
 
-Projects using [drago-ex/project-tools](https://github.com/drago-ex/project-tools) can run package-defined migration commands through:
+In projects using [drago-ex/project-tools](https://github.com/drago-ex/project-tools), the `db:migrate` operation of
+`drago-setup` runs `sql-export` and then `migration db:migrate migrations`:
 
 ```bash
 php vendor/bin/drago-setup
 ```
 
-Packages expose their setup commands in `composer.json` under `extra.drago-tools.commands`.
-The migration package provides the migration runner; `drago-setup` only discovers and executes commands defined by installed packages.
+Packages do not need their own migration commands; they put SQL files into `migrations/` and set
+`extra.drago-tools.commands-priority`, which decides their place in the order.
 
 ## Register Migration Extension in Nette
 
@@ -144,9 +146,9 @@ CREATE TABLE IF NOT EXISTS migrations (
   migration that fails after such a statement stays partially applied and is not recorded. Keep one schema
   change per file, so a failed migration can be fixed and run again.
 - **Where a migration is recorded.** A file inside `vendor/<vendor>/<package>/` is recorded under
-  `<vendor>/<package>`, any other file under `core`, always together with its file name. Run each migration
-  from one place only: a package migration first run from `vendor/` (for example by `drago-setup`) and later
-  exported with `sql-export` into `migrations/` gets a different record and would run again.
+  `<vendor>/<package>`, any other file under `core`, always together with its file name. Run migrations from the
+  project's `migrations/` directory. A file that already ran from `vendor/` (e.g. by an older `drago-setup`)
+  with the same content is not run again from `migrations/`; it is only recorded under `core`.
 - `sql-export` skips files that already exist with the same content. A different file with the same name,
   for example from another package, is reported as a conflict and the command ends with exit code 1.
 - `vendor/bin/migration` runs from the project root and loads `app/Bootstrap.php`; it calls

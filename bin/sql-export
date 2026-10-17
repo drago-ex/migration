@@ -138,7 +138,14 @@ foreach (InstalledVersions::getInstalledPackages() as $packageName) {
 usort($exported, fn(array $a, array $b): int => [$a['priority'], $a['name']] <=> [$b['priority'], $b['name']]);
 if ($exported !== []) {
 	MigrationFiles::writeOrder($targetDir, array_merge(...array_column($exported, 'files')));
-	echo "\n{$blue}INFO Order of the migrations written to {$targetLabel}/" . MigrationFiles::OrderFile . "{$reset}\n";
+	echo "\n{$blue}INFO Migrations will run in this order ({$targetLabel}/" . MigrationFiles::OrderFile . "):{$reset}\n";
+
+	$position = 1;
+	foreach ($exported as $package) {
+		foreach ($package['files'] as $filename) {
+			printf("  %3d. %-40s %s(%s, priority %d)%s\n", $position++, $filename, $blue, $package['name'], $package['priority'], $reset);
+		}
+	}
 }
 
 if ($found === 0) {
