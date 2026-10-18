@@ -47,12 +47,14 @@ final class MigrationFiles
 	{
 		$packages = [];
 		$root = realpath($projectRoot);
+		$self = realpath(dirname(__DIR__, 2));
 		foreach (InstalledVersions::getInstalledPackages() as $name) {
 			$path = InstalledVersions::getInstallPath($name);
 			$path = $path !== null ? realpath($path) : false;
 
 			// The project itself is the root package; its migrations/ are added at the end.
-			if ($path === false || $path === $root) {
+			// The migrations table of this package is created by MigrationRunner before any migration runs.
+			if ($path === false || $path === $root || $path === $self) {
 				continue;
 			}
 

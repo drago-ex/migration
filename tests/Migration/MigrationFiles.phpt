@@ -126,3 +126,14 @@ test('Copies of package migrations in migrations/ are left out, also with other 
 
 	Assert::same(['acme/auth:001_users.sql', 'core:002_own.sql'], plan($root));
 });
+
+
+test('The migrations table of this package is left out, the runner creates it first', function () {
+	$root = createTree(['vendor/acme/users/migrations/001_users.sql' => '']);
+	fakeInstalled($root, [
+		'acme/migration' => dirname(__DIR__, 2),
+		'acme/users' => "$root/vendor/acme/users",
+	]);
+
+	Assert::same(['acme/users:001_users.sql'], plan($root));
+});
