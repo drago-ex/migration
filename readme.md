@@ -69,7 +69,7 @@ Migrations in the order they run:
   11. 001_own_table.sql                        (project)
 ```
 
-The web installer of `drago-ex/project-install` and the `db:migrate` operation of `drago-setup` use the same list
+The web installer of `drago-ex/project-install` uses the same list
 (`Drago\Migration\MigrationFiles::forProject()`), so the order is the same everywhere.
 
 When a package uses tables of another package, give it a higher `migration-priority` than that package.
@@ -87,7 +87,6 @@ add the key to its `composer.json`:
 }
 ```
 
-`migration-priority` is only for migrations; `commands-priority` orders the setup commands of `drago-setup`.
 Packages released before `migration-priority` existed set the order by `commands-priority`, so it is used when
 `migration-priority` is missing.
 
@@ -156,17 +155,15 @@ By default, SQL files are copied into the `migrations` directory. Existing files
 skipped, so the command can be safely run repeatedly; a copy in `migrations/` that is identical to a package
 migration is left out by `--packages`, so it does not run twice.
 
-## Automated Package Setup
+## Packages With Migrations
 
-In projects using [drago-ex/project-tools](https://github.com/drago-ex/project-tools), the `db:migrate` operation of
-`drago-setup` runs `migration db:migrate --packages`:
+Packages do not need their own migration commands or any other tool; they put SQL files into `migrations/` and set
+`extra.drago-tools.migration-priority`, which decides their place in the order. Any project that installs such
+packages runs them all with:
 
 ```bash
-php vendor/bin/drago-setup
+php vendor/bin/migration db:migrate --packages
 ```
-
-Packages do not need their own migration commands; they put SQL files into `migrations/` and set
-`extra.drago-tools.migration-priority`, which decides their place in the order.
 
 ## Register Migration Extension in Nette
 
