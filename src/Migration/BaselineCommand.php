@@ -37,14 +37,19 @@ final class BaselineCommand extends Command
 			return Command::FAILURE;
 		}
 
+		$report = MigrationTarget::report($input, 'db:baseline');
 		try {
 			$this->migrationRunner->baseline($path, function (string $message) use ($output) {
 				$output->writeln($message);
-			});
+			}, $report);
 
 		} catch (\Throwable $e) {
 			$output->writeln('<error>ERROR: ' . $e->getMessage() . '</error>');
+			$report?->fail($e->getMessage());
 			return Command::FAILURE;
+
+		} finally {
+			MigrationTarget::writeReport($report, $output);
 		}
 
 		return Command::SUCCESS;

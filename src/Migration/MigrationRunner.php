@@ -20,14 +20,14 @@ readonly class MigrationRunner
 
 	/**
 	 * Run migrations from a file, a directory (by file name), or a list of files in its order
-	 * (e.g. MigrationFiles::forProject()).
+	 * (e.g. MigrationFiles::forProject()). The outcome of each file is added to the report, when given.
 	 * @param string|list<string> $path
 	 * @throws Exception
 	 * @throws Throwable
 	 */
-	public function run(string|array $path, ?callable $logger = null): void
+	public function run(string|array $path, ?callable $logger = null, ?MigrationReport $report = null): void
 	{
-		$this->process($path, $logger, $this->runMigration(...));
+		$this->process($path, $logger, $report, $this->runMigration(...));
 	}
 
 
@@ -38,19 +38,19 @@ readonly class MigrationRunner
 	 * @throws Exception
 	 * @throws Throwable
 	 */
-	public function baseline(string|array $path, ?callable $logger = null): void
+	public function baseline(string|array $path, ?callable $logger = null, ?MigrationReport $report = null): void
 	{
-		$this->process($path, $logger, $this->baselineMigration(...));
+		$this->process($path, $logger, $report, $this->baselineMigration(...));
 	}
 
 
 	/**
 	 * Handles a file, every .sql file of a directory, or a list of files under the migration lock.
 	 * @param string|list<string> $path
-	 * @param callable(string, ?callable): void $handler
+	 * @param callable(string, ?callable, ?MigrationReport): void $handler
 	 * @throws Throwable
 	 */
-	private function process(string|array $path, ?callable $logger, callable $handler): void
+	private function process(string|array $path, ?callable $logger, ?MigrationReport $report, callable $handler): void
 	{
 		if (is_array($path)) {
 			foreach ($path as $file) {
@@ -66,18 +66,18 @@ readonly class MigrationRunner
 
 		$failure = null;
 		try {
-			$this->ensureMigrationsTable($logger);
+			$this->ensureMigrationsTable($logger, $report);
 
 			if (is_array($path)) {
 				foreach ($path as $file) {
-					$handler($file, $logger);
+					$handler($file, $logger, $report);
 				}
 			} elseif (is_dir($path)) {
 				foreach (MigrationFiles::list($path) as $file) {
-					$handler($file, $logger);
+					$handler($file, $logger, $report);
 				}
 			} elseif (is_file($path)) {
-				$handler($path, $logger);
+				$handler($path, $logger, $report);
 
 			} else {
 				throw new \RuntimeException(sprintf('Path "%s" does not exist.', $path));
@@ -104,10 +104,10 @@ readonly class MigrationRunner
 	 * @throws Throwable
 	 * @throws DriverException
 	 */
-	private function runMigration(string $sqlFile, ?callable $logger = null): void
+	private function runMigration(string $sqlFile, ?callable $logger = null, ?MigrationReport $report = null): void
 	{
 		[$package, $migrationFile, $checksum] = $this->describe($sqlFile);
-		if ($this->isRecorded($package, $migrationFile, $checksum, $sqlFile, $logger)) {
+		if ($this->isRecorded($package, $migrationFile, $checksum, $sqlFile, $logger, $report)) {
 			return;
 		}
 
@@ -117,10 +117,12 @@ readonly class MigrationRunner
 			$this->repository->insertMigration($package, $migrationFile, $checksum);
 			$this->repository->commit();
 			$this->log($logger, '<info>OK Migration "' . $migrationFile . '" executed successfully.</info>');
+			$report?->add($package, $sqlFile, 'executed');
 
 		} catch (Throwable $e) {
 			$this->repository->rollback();
 			$this->log($logger, '<error>ERROR Migration "' . $migrationFile . '" failed: ' . $e->getMessage() . '</error>');
+			$report?->add($package, $sqlFile, 'failed', $e->getMessage());
 			throw $e;
 		}
 	}
@@ -129,15 +131,16 @@ readonly class MigrationRunner
 	/**
 	 * @throws Exception
 	 */
-	private function baselineMigration(string $sqlFile, ?callable $logger = null): void
+	private function baselineMigration(string $sqlFile, ?callable $logger = null, ?MigrationReport $report = null): void
 	{
 		[$package, $migrationFile, $checksum] = $this->describe($sqlFile);
-		if ($this->isRecorded($package, $migrationFile, $checksum, $sqlFile, $logger)) {
+		if ($this->isRecorded($package, $migrationFile, $checksum, $sqlFile, $logger, $report)) {
 			return;
 		}
 
 		$this->repository->insertMigration($package, $migrationFile, $checksum);
 		$this->log($logger, '<info>OK Migration "' . $migrationFile . '" recorded without running it.</info>');
+		$report?->add($package, $sqlFile, 'recorded');
 	}
 
 
@@ -184,19 +187,22 @@ readonly class MigrationRunner
 		string $checksum,
 		string $sqlFile,
 		?callable $logger,
+		?MigrationReport $report,
 	): bool
 	{
 		$existingChecksum = $this->repository->getMigrationChecksum($package, $migrationFile);
 		if ($existingChecksum === null) {
-			return $this->isRecordedElsewhere($package, $migrationFile, $checksum, $sqlFile, $logger);
+			return $this->isRecordedElsewhere($package, $migrationFile, $checksum, $sqlFile, $logger, $report);
 		}
 
 		if (!in_array($existingChecksum, $this->checksumVariants($checksum, $sqlFile), true)) {
 			$this->log($logger, '<error>ERROR Migration "' . $migrationFile . '" failed: checksum mismatch.</error>');
+			$report?->add($package, $sqlFile, 'failed', 'Modified after execution (checksum mismatch).');
 			throw new \RuntimeException('Migration "' . $migrationFile . '" was modified after execution.');
 		}
 
 		$this->log($logger, '<comment>SKIP Migration "' . $migrationFile . '" already executed.</comment>');
+		$report?->add($package, $sqlFile, 'skipped');
 		return true;
 	}
 
@@ -204,7 +210,7 @@ readonly class MigrationRunner
 	/**
 	 * @throws Exception
 	 */
-	private function ensureMigrationsTable(?callable $logger = null): void
+	private function ensureMigrationsTable(?callable $logger = null, ?MigrationReport $report = null): void
 	{
 		if ($this->repository->migrationsTableExists()) {
 			return;
@@ -223,6 +229,7 @@ readonly class MigrationRunner
 		$this->repository->runSqlFile($sqlFile);
 		$this->repository->insertMigration('drago-ex/migration', basename($sqlFile), $checksum);
 		$this->log($logger, '<info>OK Migration table created.</info>');
+		$report?->add('drago-ex/migration', $sqlFile, 'executed');
 	}
 
 
@@ -237,6 +244,7 @@ readonly class MigrationRunner
 		string $checksum,
 		string $sqlFile,
 		?callable $logger,
+		?MigrationReport $report,
 	): bool
 	{
 		$checksums = $this->checksumVariants($checksum, $sqlFile);
@@ -246,6 +254,7 @@ readonly class MigrationRunner
 
 		$this->repository->insertMigration($package, $migrationFile, $checksum);
 		$this->log($logger, '<comment>SKIP Migration "' . $migrationFile . '" already executed from another location.</comment>');
+		$report?->add($package, $sqlFile, 'skipped', 'Already executed from another location.');
 		return true;
 	}
 

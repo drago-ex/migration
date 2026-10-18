@@ -49,4 +49,25 @@ final class MigrationTarget
 		$output->writeln('');
 		return array_column($migrations, 'file');
 	}
+
+
+	/** A run with --packages sets up the project, so it is recorded in .drago-project/migration.json. */
+	public static function report(InputInterface $input, string $command): ?MigrationReport
+	{
+		return $input->getOption('packages')
+			? new MigrationReport((string) getcwd(), "migration $command --packages")
+			: null;
+	}
+
+
+	public static function writeReport(?MigrationReport $report, OutputInterface $output): void
+	{
+		if ($report === null) {
+			return;
+		}
+
+		$output->writeln($report->write()
+			? '<info>INFO Report: ' . MigrationReport::File . '</info>'
+			: '<comment>WARN Cannot write report: ' . MigrationReport::File . '</comment>');
+	}
 }

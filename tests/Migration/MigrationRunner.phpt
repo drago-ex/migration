@@ -6,6 +6,7 @@
 
 declare(strict_types=1);
 
+use Drago\Migration\MigrationReport;
 use Drago\Migration\MigrationRunner;
 use Drago\Migration\Repository;
 use Tester\Assert;
@@ -408,5 +409,94 @@ test('Baseline refuses a recorded migration that was changed', function () {
 	} finally {
 		unlink($file);
 		rmdir($directory);
+	}
+});
+
+
+test('The report records what each migration did, with paths relative to the project', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$GLOBALS['migrationTableExists'] = false;
+	$root = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	$vendor = $root . '/vendor/acme/users/migrations';
+	mkdir($vendor, 0o777, true);
+	mkdir($root . '/migrations');
+	file_put_contents($vendor . '/001_users.sql', 'SELECT 1;');
+	file_put_contents($root . '/migrations/001_pages.sql', 'SELECT 2;');
+	$files = [$vendor . '/001_users.sql', $root . '/migrations/001_pages.sql'];
+
+	try {
+		$runner = new MigrationRunner(new MigrationRunnerTestRepository);
+		$report = new MigrationReport($root, 'migration db:migrate --packages');
+		$runner->run($files, null, $report);
+
+		Assert::same([
+			['package' => 'drago-ex/migration', 'file' => str_replace(DIRECTORY_SEPARATOR, '/', dirname(__DIR__, 2)) . '/migrations/000_migrations.sql', 'action' => 'executed'],
+			['package' => 'acme/users', 'file' => 'vendor/acme/users/migrations/001_users.sql', 'action' => 'executed'],
+			['package' => 'core', 'file' => 'migrations/001_pages.sql', 'action' => 'executed'],
+		], $report->getEntries());
+
+		// A second run skips both; the report is written into .drago-project/
+		$GLOBALS['migrationTableExists'] = true;
+		$report = new MigrationReport($root, 'migration db:migrate --packages');
+		$runner->run($files, null, $report);
+		Assert::true($report->write());
+
+		$data = json_decode((string) file_get_contents($root . '/.drago-project/migration.json'), true);
+		Assert::same('migration', $data['tool']);
+		Assert::same('migration db:migrate --packages', $data['command']);
+		Assert::same('ok', $data['result']);
+		Assert::same(['executed' => 0, 'recorded' => 0, 'skipped' => 2, 'failed' => 0], $data['stats']);
+		Assert::same(['skipped', 'skipped'], array_column($data['entries'], 'action'));
+	} finally {
+		unset($GLOBALS['migrationTableExists']);
+	}
+});
+
+
+test('The report records a failed migration and the error of the run', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = ['001_changed.sql' => 'old-checksum'];
+	$root = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($root);
+	$file = $root . '/001_changed.sql';
+	file_put_contents($file, 'SELECT changed;');
+
+	$report = new MigrationReport($root, 'migration db:migrate --packages');
+	Assert::exception(
+		fn() => (new MigrationRunner(new MigrationRunnerTestRepository))->run($file, null, $report),
+		RuntimeException::class,
+	);
+	$report->fail('Migration "001_changed.sql" was modified after execution.');
+
+	$data = $report->toArray();
+	Assert::same('error', $data['result']);
+	Assert::same('Migration "001_changed.sql" was modified after execution.', $data['message']);
+	Assert::same(1, $data['stats']['failed']);
+	Assert::same(
+		['package' => 'core', 'file' => '001_changed.sql', 'action' => 'failed', 'message' => 'Modified after execution (checksum mismatch).'],
+		$data['entries'][0],
+	);
+});
+
+
+test('Baseline and an executed elsewhere migration are reported', function () {
+	$GLOBALS['migrationEvents'] = [];
+	$GLOBALS['migrationChecksums'] = [];
+	$root = sys_get_temp_dir() . '/migration-runner-' . bin2hex(random_bytes(8));
+	mkdir($root);
+	file_put_contents($root . '/001_users.sql', 'SELECT 1;');
+	file_put_contents($root . '/002_roles.sql', 'SELECT 2;');
+	$GLOBALS['migrationChecksumsElsewhere'] = ['001_users.sql' => [sha1_file($root . '/001_users.sql')]];
+
+	try {
+		$report = new MigrationReport($root, 'migration db:baseline --packages');
+		(new MigrationRunner(new MigrationRunnerTestRepository))->baseline($root, null, $report);
+		Assert::same([
+			['package' => 'core', 'file' => '001_users.sql', 'action' => 'skipped', 'message' => 'Already executed from another location.'],
+			['package' => 'core', 'file' => '002_roles.sql', 'action' => 'recorded'],
+		], $report->getEntries());
+	} finally {
+		unset($GLOBALS['migrationChecksumsElsewhere']);
 	}
 });

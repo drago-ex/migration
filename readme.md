@@ -105,6 +105,45 @@ Already recorded files are skipped and a recorded file that was changed is repor
 `db:migrate`. Use it only for files whose changes really are in the database; `db:migrate` never runs a
 recorded file again.
 
+## Report of the Run
+
+With `--packages`, `db:migrate` and `db:baseline` write what they did to `.drago-project/migration.json`
+in the project, so a programmer or an agent can see the outcome later. Each run overwrites the report; the history
+of executed migrations is in the `migrations` table. The report depends on the database it ran against, so add
+`.drago-project/migration.json` to `.gitignore`.
+
+```json
+{
+    "tool": "migration",
+    "command": "migration db:migrate --packages",
+    "date": "2026-10-18T14:05:12+02:00",
+    "result": "ok",
+    "stats": {
+        "executed": 1,
+        "recorded": 0,
+        "skipped": 1,
+        "failed": 0
+    },
+    "entries": [
+        {
+            "package": "drago-ex/project-auth",
+            "file": "vendor/drago-ex/project-auth/migrations/001_users.sql",
+            "action": "skipped"
+        },
+        {
+            "package": "core",
+            "file": "migrations/001_own_table.sql",
+            "action": "executed"
+        }
+    ]
+}
+```
+
+The action is `executed`, `recorded` (by `db:baseline`), `skipped` (already executed) or `failed` with a `message`.
+When the run stops with an error, `result` is `error` and `message` holds the error.
+
+Code calling `MigrationRunner` directly can pass a `MigrationReport` as the third argument of `run()` or `baseline()`.
+
 ## Export SQL Migrations (optional)
 
 Migrations do not need to be copied into the project to run. If you want the SQL files of the packages

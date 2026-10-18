@@ -36,14 +36,19 @@ final class MigrationCommand extends Command
 			return Command::FAILURE;
 		}
 
+		$report = MigrationTarget::report($input, 'db:migrate');
 		try {
 			$this->migrationRunner->run($path, function (string $message) use ($output) {
 				$output->writeln($message);
-			});
+			}, $report);
 
 		} catch (\Throwable $e) {
 			$output->writeln('<error>ERROR: ' . $e->getMessage() . '</error>');
+			$report?->fail($e->getMessage());
 			return Command::FAILURE;
+
+		} finally {
+			MigrationTarget::writeReport($report, $output);
 		}
 
 		return Command::SUCCESS;
