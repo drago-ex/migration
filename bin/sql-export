@@ -61,6 +61,7 @@ echo "{$blue}INFO Scanning vendor packages for migration SQL files...{$reset}\n\
 $found = 0;
 $copied = 0;
 $skipped = 0;
+$conflicts = 0;
 
 foreach (InstalledVersions::getInstalledPackages() as $packageName) {
 	if ($packageName === $rootPackageName) {
@@ -97,8 +98,14 @@ foreach (InstalledVersions::getInstalledPackages() as $packageName) {
 			$targetFile = $targetDir . DIRECTORY_SEPARATOR . $filename;
 
 			if (file_exists($targetFile)) {
-				echo "{$yellow}SKIP exists:{$reset} {$filename}\n";
-				$skipped++;
+				// A different file with the same name (e.g. from another package) would never be exported.
+				if (!isSameSql($targetFile, $file)) {
+					echo "{$red}CONFLICT:{$reset} {$packageName} -> {$filename} differs from the existing file\n";
+					$conflicts++;
+				} else {
+					echo "{$yellow}SKIP exists:{$reset} {$filename}\n";
+					$skipped++;
+				}
 				continue;
 			}
 
@@ -119,6 +126,19 @@ if ($found === 0) {
 } else {
 	echo "\n{$green}OK Copied {$copied} files into {$targetLabel}. Skipped {$skipped} existing files.{$reset}\n";
 }
+
+if ($conflicts > 0) {
+	echo "{$red}ERROR {$conflicts} file(s) were not exported because a different file with the same name exists. Rename one of them.{$reset}\n";
+	exit(1);
+}
+
+/** Compares the files regardless of line endings, which Git may change on checkout. */
+function isSameSql(string $a, string $b): bool
+{
+	$normalize = static fn(string $file): string => str_replace("\r\n", "\n", (string) file_get_contents($file));
+	return $normalize($a) === $normalize($b);
+}
+
 
 function isAbsolutePath(string $path): bool
 {

@@ -10,63 +10,19 @@ It allows you to run SQL migrations from files or directories with checksum vali
 [![Coding Style](https://github.com/drago-ex/migration/actions/workflows/coding-style.yml/badge.svg)](https://github.com/drago-ex/migration/actions/workflows/coding-style.yml)
 
 ## Requirements
-
 - PHP >= 8.3, < 9
 - Nette Framework
 - Symfony Console
 - dibi
+- MySQL or MariaDB
 - Composer
 
 ## Installation
-
 ```bash
 composer require drago-ex/migration
 ```
 
-## Examples
-
-Run migrations using the Composer-installed binary:
-```bash
-php vendor/bin/migration db:migrate <path>
-```
-Path to a single SQL file or a directory containing multiple .sql files.
-
-```bash
-# Run all migrations in a folder
-php vendor/bin/migration db:migrate migrations
-
-# Run a single migration file
-php vendor/bin/migration db:migrate migrations/001_example.sql
-```
-
-## Export SQL Migrations
-
-Export migration SQL files from installed Composer packages:
-```bash
-php vendor/bin/sql-export
-```
-By default, SQL files are copied into the `migrations` directory.
-
-Use an optional target directory argument to export files elsewhere:
-```bash
-php vendor/bin/sql-export db
-php vendor/bin/sql-export temp/sql
-```
-Existing files are skipped, so the command can be safely run repeatedly.
-
-## Automated Package Setup
-
-Projects using [drago-ex/project-tools](https://github.com/drago-ex/project-tools) can run package-defined migration commands through:
-
-```bash
-php vendor/bin/drago-setup
-```
-
-Packages expose their setup commands in `composer.json` under `extra.drago-tools.commands`.
-The migration package provides the migration runner; `drago-setup` only discovers and executes commands defined by installed packages.
-
 ## Register Migration Extension in Nette
-
 ```neon
 extensions:
     migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
@@ -79,10 +35,55 @@ console:
 ```
 Make sure the %consoleMode% parameter is available (usually already present in Nette CLI setups).
 
-## Database Setup
+## Examples
+```bash
+# Run the migrations of all installed packages in their order, then the project's migrations/
+php vendor/bin/migration db:migrate --packages
 
-The migrations table is created automatically on the first migration run.
-The table is created from the package SQL file `migrations/000_migrations.sql`:
+# Run all migrations in a folder
+php vendor/bin/migration db:migrate migrations
+
+# Run a single migration file
+php vendor/bin/migration db:migrate migrations/001_example.sql
+```
+A migration that already ran is never run again.
+
+## Order of Package Migrations
+With `--packages`, the migrations run straight from `vendor/` (nothing is copied): packages ordered by
+`migration-priority` (lower first, default 100) and name, then the project's own `migrations/`.
+A package that uses tables of another package needs a higher priority:
+
+```json
+"extra": {
+    "drago-tools": {
+        "migration-priority": 30
+    }
+}
+```
+Drago packages use 10 for base tables (`users` of drago-ex/project-auth), 20 for packages built on them
+(drago-ex/project-permission) and the default 100 for the rest.
+
+## Record Existing Migrations
+Records migrations as executed without running them, for a database whose tables already exist:
+```bash
+php vendor/bin/migration db:baseline --packages
+```
+
+## Report
+With `--packages`, the result of the last run is written to `.drago-project/migration.json`.
+It differs per database, so add it to `.gitignore`.
+
+## Export SQL Migrations (optional)
+Copies the SQL files of installed packages into the project:
+```bash
+php vendor/bin/sql-export
+php vendor/bin/sql-export temp/sql
+```
+By default, SQL files are copied into the `migrations` directory. Existing files are skipped.
+
+## Database Setup
+The migrations table is created automatically on the first migration run,
+from the package SQL file `migrations/000_migrations.sql`:
 ```sql
 CREATE TABLE IF NOT EXISTS migrations (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -99,7 +100,6 @@ CREATE TABLE IF NOT EXISTS migrations (
 ```
 
 ## Features
-
 - Checksum validation - detects modified migrations
 - Transactional execution - safe rollback on failure
 - Database locking - prevents concurrent runs
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS migrations (
 - Symfony Console integration - clean CLI output
 
 ## Notes
-
-- This package is designed for Nette Framework projects.
+- MySQL commits `CREATE`, `ALTER` and `DROP` immediately, so keep one schema change per file.
+- Line endings do not count as a change of a migration.
 - The provided CLI binary expects a Nette project structure with app/Bootstrap.php.
 - For non-Nette projects, a custom bootstrap script is required.

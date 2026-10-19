@@ -7,7 +7,7 @@ Use this file as package-specific guidance when working in this repository. Keep
 - **Type**: library
 - **Purpose**: A simple CLI tool for running SQL migrations.
 - **PHP**: >=8.3 <9
-- **Runtime dependencies**: contributte/console (^0.10), dibi/dibi (^5.0)
+- **Runtime dependencies**: composer-runtime-api (^2.0), contributte/console (^0.10), dibi/dibi (^5.0)
 - **License**: MIT
 
 ## Repository Layout
@@ -17,6 +17,16 @@ Use this file as package-specific guidance when working in this repository. Keep
 - `tests/`: automated tests.
 - `.github/`: CI workflows; keep their PHP versions and commands consistent with Composer and the package scripts.
 - `composer.json`: package metadata, dependency constraints, autoloading, and available Composer scripts.
+
+## Key Parts
+- `MigrationRunner` runs a file, a directory (by file name) or a list of files (in its order) under a `GET_LOCK()` lock, records checksums per package (`vendor/<vendor>/<package>` or `core`) and file name, and stops on a changed file. MySQL and MariaDB only.
+- `MigrationFiles::forProject()` builds the list for `db:migrate --packages` / `db:baseline --packages` and the web installer (`drago-ex/project-install`): package migrations straight from `vendor/` ordered by `extra.drago-tools.migration-priority` (falls back to `commands-priority` of packages released before the key existed; default 100) and package name, files by name, then the project's `migrations/` (copies identical to a package migration are left out). Nothing is copied. This package's own `000_migrations.sql` is not in the list: `MigrationRunner` creates the migrations table before anything else runs.
+- With `--packages`, `db:migrate` and `db:baseline` write `.drago-project/migration.json` (`MigrationReport`, passed as the optional third argument of `MigrationRunner::run()` / `baseline()`; actions executed, recorded, skipped, failed). The same header is used by `create-permission --packages` (drago-ex/permission) and `drago-install` (drago-ex/project-tools).
+- Line endings never count as a change: checksums are compared with LF and CRLF variants.
+- The same file with the same checksum recorded under another package (`vendor/` vs. `core`) counts as executed and is only recorded for the current location.
+- A failure to release the lock must not hide the migration error. MySQL commits DDL statements immediately, so transactions do not undo them; keep one schema change per file.
+- `bin/sql-export` is optional: it copies package migrations into the project; a different file with the same name (ignoring line endings) is a conflict (exit code 1).
+- Unit tests use a fake `Repository` (`tests/Migration/MigrationRunner.phpt`); `tests/Migration/MigrationFiles.phpt` fakes installed packages with `InstalledVersions::reload()`.
 
 ## Dependencies
 
