@@ -9,18 +9,14 @@ use Drago\Migration\MigrationCommand;
 use Drago\Migration\MigrationRunner;
 use Drago\Migration\Repository;
 use Nette\DI\CompilerExtension;
-use Nette\DI\Definitions\ServiceDefinition;
-use Symfony\Component\Console\Command\Command;
 
 
+/** Registers the migration commands in console mode; contributte/console finds them by type and #[AsCommand]. */
 final class MigrationExtension extends CompilerExtension
 {
-	private bool $consoleMode;
-
-
-	public function __construct(bool $consoleMode = false)
-	{
-		$this->consoleMode = $consoleMode;
+	public function __construct(
+		private readonly bool $consoleMode = false,
+	) {
 	}
 
 
@@ -38,28 +34,9 @@ final class MigrationExtension extends CompilerExtension
 			->setFactory(MigrationRunner::class, ['@' . $this->prefix('repository')]);
 
 		$builder->addDefinition($this->prefix('command'))
-			->setFactory(MigrationCommand::class, ['@' . $this->prefix('runner')])
-			->addTag('console.command');
+			->setFactory(MigrationCommand::class, ['@' . $this->prefix('runner')]);
 
 		$builder->addDefinition($this->prefix('baselineCommand'))
-			->setFactory(BaselineCommand::class, ['@' . $this->prefix('runner')])
-			->addTag('console.command');
-
-		$this->compiler->addExportedType(MigrationCommand::class);
-	}
-
-
-	public function beforeCompile(): void
-	{
-		if (!$this->consoleMode) {
-			return;
-		}
-
-		$builder = $this->getContainerBuilder();
-		$commands = $builder->findByType(Command::class);
-		foreach ($commands as $serviceDef) {
-			assert($serviceDef instanceof ServiceDefinition);
-			$serviceDef->addTag('console.command');
-		}
+			->setFactory(BaselineCommand::class, ['@' . $this->prefix('runner')]);
 	}
 }

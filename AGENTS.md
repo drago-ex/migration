@@ -25,6 +25,7 @@ Use this file as package-specific guidance when working in this repository. Keep
 - Line endings never count as a change: checksums are compared with LF and CRLF variants.
 - The same file with the same checksum recorded under another package (`vendor/` vs. `core`) counts as executed and is only recorded for the current location.
 - A failure to release the lock must not hide the migration error. MySQL commits DDL statements immediately, so transactions do not undo them; keep one schema change per file.
+- `DI\MigrationExtension(%consoleMode%)` registers the repository, runner and both commands only in console mode; contributte/console finds the commands by type and their `#[AsCommand]` name, so no tags are needed. The web installer (`project-install`) registers `Repository` and `MigrationRunner` itself.
 - `bin/sql-export` is optional: it copies package migrations into the project; a different file with the same name (ignoring line endings) is a conflict (exit code 1).
 - Unit tests use a fake `Repository` (`tests/Migration/MigrationRunner.phpt`); `tests/Migration/MigrationFiles.phpt` fakes installed packages with `InstalledVersions::reload()`.
 

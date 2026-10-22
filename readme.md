@@ -25,8 +25,8 @@ composer require drago-ex/migration
 ## Register Migration Extension in Nette
 ```neon
 extensions:
-    migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
-    console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
+	migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
+	console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
 
 # Symfony Console
 console:
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS migrations (
 
 ## Features
 - Checksum validation - detects modified migrations
-- Transactional execution - safe rollback on failure
+- Transactional execution - a failed migration is not recorded (MySQL commits schema changes immediately, see Notes)
 - Database locking - prevents concurrent runs
 - Package-aware migrations - supports vendor-based migrations
 - Automatic migrations table setup on first run
