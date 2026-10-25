@@ -81,7 +81,8 @@ Copies the SQL files of installed packages into the project:
 php vendor/bin/sql-export
 php vendor/bin/sql-export temp/sql
 ```
-By default, SQL files are copied into the `migrations` directory. Existing files are skipped.
+By default, SQL files are copied into the `migrations` directory. Existing files with the same content are skipped;
+a different file with the same name is reported as CONFLICT, not copied, and the script exits with code 1.
 
 ## Database Setup
 The migrations table is created automatically on the first migration run,

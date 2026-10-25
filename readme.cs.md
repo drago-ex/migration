@@ -39,13 +39,13 @@ Parametr %consoleMode% musí být k dispozici (v nastavení Nette pro příkazov
 
 ## Příklady
 ```bash
-# Spustí migrace všech nainstalovaných balíčků v jejich pořadí, potom migrations/ projektu
+# Run the migrations of all installed packages in their order, then the project's migrations/
 php vendor/bin/migration db:migrate --packages
 
-# Spustí všechny migrace v adresáři
+# Run all migrations in a folder
 php vendor/bin/migration db:migrate migrations
 
-# Spustí jeden soubor s migrací
+# Run a single migration file
 php vendor/bin/migration db:migrate migrations/001_example.sql
 ```
 Migrace, která už proběhla, se znovu nespustí.
@@ -81,7 +81,8 @@ Zkopíruje SQL soubory nainstalovaných balíčků do projektu:
 php vendor/bin/sql-export
 php vendor/bin/sql-export temp/sql
 ```
-Ve výchozím stavu se SQL soubory kopírují do adresáře `migrations`. Existující soubory se přeskočí.
+Ve výchozím stavu se SQL soubory kopírují do adresáře `migrations`. Existující soubory se stejným obsahem se přeskočí;
+jiný soubor se stejným názvem se ohlásí jako CONFLICT, nezkopíruje se a skript skončí s kódem 1.
 
 ## Nastavení databáze
 Tabulka migrací se vytvoří automaticky při prvním spuštění migrací
