@@ -105,7 +105,13 @@ CREATE TABLE IF NOT EXISTS migrations (
 - Dodaný spustitelný soubor očekává strukturu projektu Nette s app/Bootstrap.php.
 - Pro projekty bez Nette je potřeba vlastní spouštěcí skript.
 
-## Export SQL migrací (volitelné)
+---
+
+## Volitelné doplňky
+
+Balíček funguje i bez nich. Pokud je projekt potřebuje, nastavte je ručně podle popisu níže.
+
+### Export SQL migrací
 Zkopíruje SQL soubory nainstalovaných balíčků do projektu:
 ```bash
 php vendor/bin/sql-export

@@ -105,7 +105,13 @@ CREATE TABLE IF NOT EXISTS migrations (
 - The provided CLI binary expects a Nette project structure with app/Bootstrap.php.
 - For non-Nette projects, a custom bootstrap script is required.
 
-## Export SQL Migrations (optional)
+---
+
+## Optional add-ons
+
+The package works without them. Set them up by hand as described below when the project needs them.
+
+### Export SQL Migrations
 Copies the SQL files of installed packages into the project:
 ```bash
 php vendor/bin/sql-export
