@@ -73,15 +73,6 @@ php vendor/bin/migration db:baseline --packages
 With `--packages`, the result of the last run is written to `.drago-project/migration.json`.
 It differs per database, so add it to `.gitignore`.
 
-## Export SQL Migrations (optional)
-Copies the SQL files of installed packages into the project:
-```bash
-php vendor/bin/sql-export
-php vendor/bin/sql-export temp/sql
-```
-By default, SQL files are copied into the `migrations` directory. Existing files with the same content are skipped;
-a different file with the same name is reported as CONFLICT, not copied, and the script exits with code 1.
-
 ## Database Setup
 The migrations table is created automatically on the first migration run,
 from the package SQL file `migrations/000_migrations.sql`:
@@ -113,3 +104,12 @@ CREATE TABLE IF NOT EXISTS migrations (
 - Line endings do not count as a change of a migration.
 - The provided CLI binary expects a Nette project structure with app/Bootstrap.php.
 - For non-Nette projects, a custom bootstrap script is required.
+
+## Export SQL Migrations (optional)
+Copies the SQL files of installed packages into the project:
+```bash
+php vendor/bin/sql-export
+php vendor/bin/sql-export temp/sql
+```
+By default, SQL files are copied into the `migrations` directory. Existing files with the same content are skipped;
+a different file with the same name is reported as CONFLICT, not copied, and the script exits with code 1.

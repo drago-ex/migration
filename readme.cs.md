@@ -73,15 +73,6 @@ php vendor/bin/migration db:baseline --packages
 S `--packages` se výsledek posledního běhu zapíše do `.drago-project/migration.json`.
 Pro každou databázi je jiný, přidejte ho proto do `.gitignore`.
 
-## Export SQL migrací (volitelné)
-Zkopíruje SQL soubory nainstalovaných balíčků do projektu:
-```bash
-php vendor/bin/sql-export
-php vendor/bin/sql-export temp/sql
-```
-Ve výchozím stavu se SQL soubory kopírují do adresáře `migrations`. Existující soubory se stejným obsahem se přeskočí;
-jiný soubor se stejným názvem se ohlásí jako CONFLICT, nezkopíruje se a skript skončí s kódem 1.
-
 ## Nastavení databáze
 Tabulka migrací se vytvoří automaticky při prvním spuštění migrací
 ze SQL souboru balíčku `migrations/000_migrations.sql`:
@@ -113,3 +104,12 @@ CREATE TABLE IF NOT EXISTS migrations (
 - Konce řádků se jako změna migrace nepočítají.
 - Dodaný spustitelný soubor očekává strukturu projektu Nette s app/Bootstrap.php.
 - Pro projekty bez Nette je potřeba vlastní spouštěcí skript.
+
+## Export SQL migrací (volitelné)
+Zkopíruje SQL soubory nainstalovaných balíčků do projektu:
+```bash
+php vendor/bin/sql-export
+php vendor/bin/sql-export temp/sql
+```
+Ve výchozím stavu se SQL soubory kopírují do adresáře `migrations`. Existující soubory se stejným obsahem se přeskočí;
+jiný soubor se stejným názvem se ohlásí jako CONFLICT, nezkopíruje se a skript skončí s kódem 1.
