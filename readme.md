@@ -1,7 +1,5 @@
 # Drago Migration
 
-English | [Čeština](readme.cs.md)
-
 A simple CLI tool for running SQL migrations.
 Drago Migration is a lightweight CLI tool built on Nette, Dibi and Symfony Console.
 It allows you to run SQL migrations from files or directories with checksum validation, transactional execution and database-level locking.

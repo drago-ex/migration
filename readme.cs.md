@@ -1,7 +1,5 @@
 # Drago Migration
 
-[English](readme.md) | Čeština
-
 Jednoduchý nástroj pro příkazovou řádku na spouštění SQL migrací.
 Drago Migration je malý nástroj postavený na Nette, Dibi a Symfony Console.
 Spouští SQL migrace ze souborů nebo adresářů s kontrolou kontrolních součtů, v transakcích a se zámkem na úrovni databáze.
