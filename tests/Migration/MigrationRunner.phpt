@@ -1,10 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 /**
  * Test: Drago\Migration\MigrationRunner
  */
-
-declare(strict_types=1);
 
 use Drago\Migration\MigrationReport;
 use Drago\Migration\MigrationRunner;
@@ -105,7 +103,10 @@ test('Migrations run in filename order and are skipped after recording their che
 		$runner->run($directory);
 		$firstEvents = $GLOBALS['migrationEvents'];
 
-		Assert::same(['lock', 'begin', 'sql', 'insert', 'commit', 'begin', 'sql', 'insert', 'commit', 'release'], array_column($firstEvents, 0));
+		Assert::same(
+			['lock', 'begin', 'sql', 'insert', 'commit', 'begin', 'sql', 'insert', 'commit', 'release'],
+			array_column($firstEvents, 0),
+		);
 		Assert::same('001_first.sql', $firstEvents[2][1]);
 		Assert::same('002_second.sql', $firstEvents[6][1]);
 
@@ -405,7 +406,11 @@ test('Baseline refuses a recorded migration that was changed', function () {
 
 	try {
 		$runner = new MigrationRunner(new MigrationRunnerTestRepository);
-		Assert::exception(fn() => $runner->baseline($file), RuntimeException::class, 'Migration "001_changed.sql" was modified after execution.');
+		Assert::exception(
+			fn() => $runner->baseline($file),
+			RuntimeException::class,
+			'Migration "001_changed.sql" was modified after execution.',
+		);
 	} finally {
 		unlink($file);
 		rmdir($directory);
@@ -431,7 +436,11 @@ test('The report records what each migration did, with paths relative to the pro
 		$runner->run($files, null, $report);
 
 		Assert::same([
-			['package' => 'drago-ex/migration', 'file' => str_replace(DIRECTORY_SEPARATOR, '/', dirname(__DIR__, 2)) . '/migrations/000_migrations.sql', 'action' => 'executed'],
+			[
+				'package' => 'drago-ex/migration',
+				'file' => str_replace(DIRECTORY_SEPARATOR, '/', dirname(__DIR__, 2)) . '/migrations/000_migrations.sql',
+				'action' => 'executed',
+			],
 			['package' => 'acme/users', 'file' => 'vendor/acme/users/migrations/001_users.sql', 'action' => 'executed'],
 			['package' => 'core', 'file' => 'migrations/001_pages.sql', 'action' => 'executed'],
 		], $report->getEntries());
@@ -474,7 +483,12 @@ test('The report records a failed migration and the error of the run', function 
 	Assert::same('Migration "001_changed.sql" was modified after execution.', $data['message']);
 	Assert::same(1, $data['stats']['failed']);
 	Assert::same(
-		['package' => 'core', 'file' => '001_changed.sql', 'action' => 'failed', 'message' => 'Modified after execution (checksum mismatch).'],
+		[
+			'package' => 'core',
+			'file' => '001_changed.sql',
+			'action' => 'failed',
+			'message' => 'Modified after execution (checksum mismatch).',
+		],
 		$data['entries'][0],
 	);
 });

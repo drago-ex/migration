@@ -1,10 +1,9 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Drago\Migration;
 
 use Composer\InstalledVersions;
+use function dirname, is_array, is_int, sprintf;
 
 
 /**

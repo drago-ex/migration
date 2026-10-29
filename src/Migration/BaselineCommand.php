@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Drago\Migration;
 
@@ -25,7 +23,12 @@ final class BaselineCommand extends Command
 	protected function configure(): void
 	{
 		$this->addArgument('path', InputArgument::OPTIONAL, 'Path to SQL file or directory')
-			->addOption('packages', null, InputOption::VALUE_NONE, "Record the migrations of all installed packages and the project's migrations/")
+			->addOption(
+				'packages',
+				null,
+				InputOption::VALUE_NONE,
+				"Record the migrations of all installed packages and the project's migrations/",
+			)
 			->setHelp('Use it only for migrations whose changes are already in the database, e.g. a database set up by an older web installer.');
 	}
 

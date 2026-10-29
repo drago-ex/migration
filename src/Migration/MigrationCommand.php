@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Drago\Migration;
 
@@ -25,7 +23,12 @@ final class MigrationCommand extends Command
 	protected function configure(): void
 	{
 		$this->addArgument('path', InputArgument::OPTIONAL, 'Path to SQL file or directory')
-			->addOption('packages', null, InputOption::VALUE_NONE, "Run the migrations of all installed packages in their order, then the project's migrations/");
+			->addOption(
+				'packages',
+				null,
+				InputOption::VALUE_NONE,
+				"Run the migrations of all installed packages in their order, then the project's migrations/",
+			);
 	}
 
 

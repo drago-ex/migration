@@ -1,10 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 /**
  * Test: Drago\Migration\MigrationFiles
  */
-
-declare(strict_types=1);
 
 use Composer\InstalledVersions;
 use Drago\Migration\MigrationFiles;
@@ -18,7 +16,7 @@ function createTree(array $files): string
 {
 	$root = __DIR__ . '/../tmp/files-' . getmypid() . '-' . bin2hex(random_bytes(4));
 	foreach ($files as $path => $content) {
-		@mkdir(dirname("$root/$path"), 0o777, true);
+		@mkdir(dirname("$root/$path"), 0o777, true); // @ directory may already exist
 		file_put_contents("$root/$path", $content);
 	}
 
@@ -99,7 +97,10 @@ test('Packages follow migration-priority, then name; the project\'s own migratio
 		'core:001_own.sql',
 	], plan($root));
 
-	Assert::same('   1. 001_users.sql                            (acme/auth, priority 10)', MigrationFiles::describe(MigrationFiles::forProject($root))[0]);
+	Assert::same(
+		'   1. 001_users.sql                            (acme/auth, priority 10)',
+		MigrationFiles::describe(MigrationFiles::forProject($root))[0],
+	);
 });
 
 

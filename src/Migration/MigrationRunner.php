@@ -1,12 +1,11 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Drago\Migration;
 
 use Dibi\DriverException;
 use Dibi\Exception;
 use Throwable;
+use function dirname, is_array, sprintf;
 
 
 /** Migration runner for executing SQL migration files safely. */

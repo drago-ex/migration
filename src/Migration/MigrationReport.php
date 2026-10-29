@@ -1,8 +1,9 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Drago\Migration;
+
+use function strlen;
+use const JSON_PRETTY_PRINT, JSON_UNESCAPED_SLASHES, JSON_UNESCAPED_UNICODE;
 
 
 /**
@@ -83,7 +84,7 @@ final class MigrationReport
 	{
 		$path = $this->projectRoot . '/' . self::File;
 		$json = json_encode($this->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-		if ($json === false || (!is_dir(dirname($path)) && !@mkdir(dirname($path), 0o777, true) && !is_dir(dirname($path)))) {
+		if ($json === false || (!is_dir(dirname($path)) && !@mkdir(dirname($path), 0o777, true) && !is_dir(dirname($path)))) { // @ directory may already exist
 			return false;
 		}
 
