@@ -127,9 +127,7 @@ readonly class MigrationRunner
 	}
 
 
-	/**
-	 * @throws Exception
-	 */
+	/** @throws Exception */
 	private function baselineMigration(string $sqlFile, ?callable $logger = null, ?MigrationReport $report = null): void
 	{
 		[$package, $migrationFile, $checksum] = $this->describe($sqlFile);
@@ -206,9 +204,7 @@ readonly class MigrationRunner
 	}
 
 
-	/**
-	 * @throws Exception
-	 */
+	/** @throws Exception */
 	private function ensureMigrationsTable(?callable $logger = null, ?MigrationReport $report = null): void
 	{
 		if ($this->repository->migrationsTableExists()) {

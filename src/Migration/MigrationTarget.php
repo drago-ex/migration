@@ -14,9 +14,7 @@ use function is_string;
  */
 final class MigrationTarget
 {
-	/**
-	 * @return string|list<string>|null null when there is nothing to run
-	 */
+	/** @return string|list<string>|null null when there is nothing to run */
 	public static function resolve(InputInterface $input, OutputInterface $output): string|array|null
 	{
 		$path = $input->getArgument('path');

@@ -29,9 +29,7 @@ final class MigrationReport
 	}
 
 
-	/**
-	 * @param 'executed'|'recorded'|'skipped'|'failed' $action
-	 */
+	/** @param 'executed'|'recorded'|'skipped'|'failed' $action */
 	public function add(string $package, string $file, string $action, ?string $message = null): void
 	{
 		$entry = ['package' => $package, 'file' => $this->relativePath($file), 'action' => $action];
