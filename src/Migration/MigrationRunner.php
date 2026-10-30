@@ -236,6 +236,7 @@ readonly class MigrationRunner
 	 * A package migration can run from vendor/ (recorded under the package) or exported into the project's
 	 * migrations/ (recorded as core). The same file with the same content that already ran from the other place
 	 * is not run again, only recorded for this one, so both ways can be used in one project.
+	 * @throws Exception
 	 */
 	private function isRecordedElsewhere(
 		string $package,
