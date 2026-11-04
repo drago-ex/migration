@@ -1,0 +1,9 @@
+# Console commands of the migrations (vendor/bin/migration), copied by drago-install of drago-ex/project-tools.
+extensions:
+	migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
+	console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
+
+
+console:
+	name: Symfony Console
+	version: '1.0'

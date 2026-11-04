@@ -33,6 +33,15 @@
 		"bin/migration",
 		"bin/sql-export"
 	],
+	"extra": {
+		"drago-tools": {
+			"install": {
+				"copy": {
+					"resources/app": "app"
+				}
+			}
+		}
+	},
 	"scripts": {
 		"phpstan": "phpstan analyse",
 		"tester": "tester tests -s -C"

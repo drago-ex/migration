@@ -23,12 +23,15 @@ composer require drago-ex/migration
 ```
 
 ## Register Migration Extension in Nette
+The package ships the console configuration, which
+[drago-ex/project-tools](https://github.com/drago-ex/project-tools) copies into the project as
+`app/Core/Console/console.neon`. Without project-tools, add it to the configuration of the project:
 ```neon
 extensions:
 	migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
 	console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
 
-# Symfony Console
+
 console:
 	name: Symfony Console
 	version: '1.0'

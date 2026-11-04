@@ -23,12 +23,15 @@ composer require drago-ex/migration
 ```
 
 ## Registrace rozšíření v Nette
+Balíček obsahuje konfiguraci konzole, kterou
+[drago-ex/project-tools](https://github.com/drago-ex/project-tools) zkopíruje do projektu jako
+`app/Core/Console/console.neon`. Bez project-tools ji přidejte do konfigurace projektu:
 ```neon
 extensions:
 	migration: Drago\Migration\DI\MigrationExtension(%consoleMode%)
 	console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
 
-# Symfony Console
+
 console:
 	name: Symfony Console
 	version: '1.0'

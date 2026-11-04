@@ -86,7 +86,7 @@ final class MigrationReport
 			return false;
 		}
 
-		return file_put_contents($path, $json . "\n") !== false;
+		return @file_put_contents($path, $json . "\n") !== false; // @ reported by the return value
 	}
 
 
