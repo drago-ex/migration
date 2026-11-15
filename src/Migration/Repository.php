@@ -71,7 +71,6 @@ readonly class Repository
 	 * Checksums of a file recorded under other packages, i.e. the same file run from another place
 	 * (from vendor/ of its package, or from the project's migrations/ as core).
 	 * @return list<string>
-	 * @throws Exception
 	 */
 	public function getChecksumsElsewhere(string $file, string $package): array
 	{
